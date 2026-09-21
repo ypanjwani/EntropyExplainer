@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entropy Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:   #ffffff;
+    --page:        #ffffff;
+    --inset:       #f5f6f8;
+    --text-1:      #0b0b0b;
+    --text-2:      #4a4a48;
+    --muted:       #767670;
+    --grid:        #e6e6e2;
+    --baseline:    #c9c9c3;
+    --border:      rgba(11,11,11,0.12);
+    --series-a:    #2a78d6;
+    --series-a-soft: #dceafb;
+    --series-b:    #eb6834;
+    --series-b-soft: #fde4d5;
+    --status-good: #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page);
+    color: var(--text-1);
+    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    padding-inline: 20px;
+    padding-block: 40px 56px;
+    display: flex;
+    justify-content: center;
+  }
+  .page { width: 100%; min-width: 0; max-width: 760px; display: flex; flex-direction: column; gap: 28px; }
+
+  h1, h2 { font-family: 'Libre Franklin', 'Segoe UI', sans-serif; font-weight: 800; margin: 0; text-wrap: balance; }
+  .hero { display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', 'Consolas', monospace;
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--series-a); margin: 0;
+  }
+  .hero h1 { font-size: clamp(30px, 6vw, 42px); }
+  .lede { margin: 0; color: var(--text-2); font-size: 15px; line-height: 1.6; max-width: 60ch; }
+  .lede b { color: var(--text-1); }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(11,11,11,0.06);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .card h2 { font-size: 20px; }
+  .section-intro { margin: 0; color: var(--text-2); font-size: 14.5px; line-height: 1.6; max-width: 64ch; }
+  .section-intro cite { font-style: normal; color: var(--text-1); }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.1fr) minmax(240px, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 620px) { .two-col { grid-template-columns: 1fr; } }
+
+  .control-col { display: flex; flex-direction: column; gap: 12px; }
+  .control-col label {
+    font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); font-family: 'IBM Plex Mono', monospace;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--series-a) 0%, var(--series-a) calc(var(--p, 64) * 1%), var(--series-b) calc(var(--p, 64) * 1%), var(--series-b) 100%);
+    outline-offset: 4px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--surface-1); border: 3px solid var(--text-1);
+    cursor: pointer; margin-top: 0;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--surface-1); border: 3px solid var(--text-1); cursor: pointer;
+  }
+  input[type="range"]:focus-visible { outline: 2px solid var(--series-a); }
+
+  .p-readout { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--text-2); }
+  .p-readout b { color: var(--text-1); font-weight: 600; }
+
+  .scatter-svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .plot-frame { fill: var(--surface-1); stroke: var(--baseline); stroke-width: 1; }
+  .plot-grid { stroke: var(--grid); stroke-width: 1; }
+  .split-line { stroke: var(--text-1); stroke-width: 2; stroke-dasharray: 6 4; stroke-linecap: round; }
+  .marker-a { fill: var(--series-a); stroke: var(--surface-1); stroke-width: 1.5; }
+  .marker-b { fill: var(--series-b); stroke: var(--surface-1); stroke-width: 1.5; stroke-linejoin: round; }
+  .marker-a.hide, .marker-b.hide { display: none; }
+
+  .split-readout {
+    display: flex; flex-direction: column; gap: 10px;
+    background: var(--inset); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+  }
+  .sp-rule { font-size: 13px; color: var(--text-2); }
+  .sp-rule b { font-family: 'IBM Plex Mono', monospace; color: var(--text-1); }
+  .sp-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sp-group { display: flex; flex-direction: column; gap: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .sp-group .lbl { font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 12.5px; color: var(--text-1); }
+  .sp-group .ca { color: var(--series-a); }
+  .sp-group .cb { color: var(--series-b); }
+  .sp-gain { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: var(--text-2); }
+  .sp-gain b { font-family: 'IBM Plex Mono', monospace; color: var(--text-1); font-variant-numeric: tabular-nums; }
+  .sp-track { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .sp-fill { height: 100%; background: var(--series-a); border-radius: 4px; }
+  .sp-pure { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+  .sp-pure b { color: var(--text-1); }
+
+  .split-readout.open { border-color: var(--series-a); background: var(--series-a-soft); }
+  .split-readout.clickable { cursor: pointer; transition: border-color .15s, background .15s; }
+  .split-readout.clickable:hover { border-color: var(--series-a); background: var(--series-a-soft); }
+  .split-readout.clickable:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+  .sp-hint { font-size: 12px; font-weight: 600; color: var(--series-a); }
+
+  /* Side panel: a flex sibling of .page, so page + panel centre together as one group.
+     Sticky keeps it in view while scrolling; below 900px it becomes a bottom sheet. */
+  .calc-panel {
+    position: sticky; top: 16px; align-self: flex-start; flex: 0 0 360px; width: 360px; margin-left: 24px;
+    max-height: calc(100vh - 32px); overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+    background: var(--surface-1); border: 1px solid var(--series-a); border-radius: 12px; padding: 16px;
+    box-shadow: 0 8px 28px rgba(11,11,11,0.10);
+  }
+  .calc-panel[hidden] { display: none; }
+  @media (max-width: 900px) {
+    .calc-panel {
+      position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 50; flex: none; width: auto; margin: 0;
+      max-height: 65vh; border-radius: 12px 12px 0 0;
+    }
+  }
+  .calc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .calc-head h3 { margin: 0; font-size: 15px; color: var(--text-1); }
+  .calc-exit {
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-2); cursor: pointer;
+    background: var(--inset); border: 1px solid var(--border); border-radius: 8px; padding: 5px 11px;
+  }
+  .calc-exit:hover { color: var(--text-1); border-color: var(--text-2); }
+  .calc-exit:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+  .calc-lead { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
+  .calc-lead b { font-family: 'IBM Plex Mono', monospace; color: var(--text-1); }
+  .calc-step { display: flex; flex-direction: column; gap: 7px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .calc-step-title { font-size: 13px; font-weight: 600; color: var(--text-1); display: flex; align-items: center; gap: 8px; }
+  .calc-num {
+    display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0;
+    border-radius: 50%; background: var(--series-a); color: #fff; font-size: 11.5px;
+  }
+  .calc-note { margin: 0; font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .calc-block { display: flex; flex-direction: column; gap: 4px; background: var(--inset); border-radius: 8px; padding: 9px 10px; }
+  .calc-sub { font-size: 12.5px; font-weight: 600; color: var(--text-1); }
+  .calc-term { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .calc-term .ca { color: var(--series-a); }
+  .calc-term .cb { color: var(--series-b); }
+  .calc-eq { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--text-2); font-variant-numeric: tabular-nums; line-height: 1.6; overflow-wrap: anywhere; }
+  .calc-eq b { color: var(--text-1); }
+  .calc-eq.result { background: var(--series-a-soft); border-radius: 8px; padding: 8px 10px; color: var(--text-1); }
+
+  .flow-connector {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+  }
+  .flow-connector::before, .flow-connector::after { content: ''; flex: 1; height: 1px; background: var(--grid); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .switch-thumb, .switch-track, .node-box, .split-readout.clickable { transition: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  .curve-col svg { width: 100%; height: auto; overflow: visible; }
+  .axis-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; fill: var(--muted); }
+  .grid-line { stroke: var(--grid); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1; }
+  .curve-path { fill: none; stroke: var(--series-a); stroke-width: 2; stroke-linecap: round; }
+  .live-dot { fill: var(--series-a); stroke: var(--surface-1); stroke-width: 2; }
+
+  .formula-readout {
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    border-top: 1px solid var(--border); padding-top: 16px;
+  }
+  .h-value { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; font-size: 30px; font-weight: 600; color: var(--text-1); line-height: 1; }
+  .h-value .unit { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .formula { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--text-2); }
+
+  .root-chip {
+    align-self: flex-start;
+    font-size: 13.5px; color: var(--text-2);
+    background: var(--inset); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .root-chip strong { color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+  .data-details { border-top: 1px solid var(--border); padding-top: 14px; }
+  .data-details summary {
+    cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--text-2);
+    list-style: none; display: flex; align-items: center; gap: 7px;
+  }
+  .data-details summary::-webkit-details-marker { display: none; }
+  .data-details summary::before {
+    content: '▸'; font-size: 10px; color: var(--muted);
+    display: inline-block; transition: transform .15s ease;
+  }
+  .data-details[open] summary::before { transform: rotate(90deg); }
+  .data-details summary:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+
+  .table-scroll { overflow-x: auto; margin-top: 12px; }
+  .data-table { border-collapse: collapse; width: 100%; font-size: 12.5px; font-family: 'IBM Plex Mono', monospace; }
+  .data-table th, .data-table td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .data-table th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.04em; }
+  .th-sort { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; background: none; border: 0; padding: 2px 0; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .th-sort:hover { color: var(--text-1); }
+  .th-sort:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; border-radius: 3px; }
+  .th-sort .arrow { font-size: 9px; opacity: 0.55; }
+  .th-sort.on .arrow { opacity: 1; color: var(--series-a); }
+  .data-table td:first-child, .data-table th:first-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .data-table th.hl, .data-table td.hl { background: var(--series-a-soft); }
+  .data-table thead th.hl { color: var(--series-a); }
+  .play-pill { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--text-1); }
+  .play-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .play-pill.yes::before { background: var(--series-a); }
+  .play-pill.no::before { background: var(--series-b); }
+
+  .feature-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+  .feature-picker button {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13.5px; font-weight: 500;
+    color: var(--text-2);
+    background: var(--inset); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 14px;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+  }
+  .feature-picker button .ig-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .feature-picker button.active {
+    background: var(--series-a-soft); border-color: var(--series-a); color: var(--text-1);
+  }
+  .feature-picker button.active .ig-badge { color: var(--series-a); }
+  .feature-picker button:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+
+  .leaderboard { display: flex; flex-direction: column; gap: 6px; }
+  .lb-row { display: grid; grid-template-columns: 112px 1fr 52px; align-items: center; gap: 10px; }
+  .lb-row .lb-name { font-size: 12.5px; color: var(--text-2); }
+  .lb-row.active .lb-name { color: var(--text-1); font-weight: 600; }
+  .lb-track { height: 10px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .lb-fill { height: 100%; border-radius: 4px; background: var(--muted); }
+  .lb-row.active .lb-fill { background: var(--series-a); }
+  .lb-row .lb-val { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
+
+  .ds-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ds-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .ds-caption { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+  .scan { display: flex; flex-direction: column; gap: 8px; background: var(--inset); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .scan[hidden] { display: none; }
+  .scan-title { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+  .scan-title b { color: var(--text-1); font-family: 'IBM Plex Mono', monospace; }
+  .scan-why { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+  .scan-row { grid-template-columns: 150px 1fr 52px; }
+  .scan-row .nb { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); margin-left: 4px; font-weight: 400; }
+  .num-note[hidden] { display: none; }
+  .scan-body { display: grid; grid-template-columns: minmax(230px, 300px) 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 620px) { .scan-body { grid-template-columns: 1fr; } }
+
+  /* 2D plot: scatter + shaded regions + cut lines (Section 2 candidate cut, Section 3 growing partition) */
+  .plot2d { width: 100%; height: auto; display: block; overflow: visible; }
+  .plot2d .reg { fill: var(--surface-1); }
+  .plot2d .reg.pure-a { fill: var(--series-a-soft); }
+  .plot2d .reg.pure-b { fill: var(--series-b-soft); }
+  .plot2d .reg.clickable { cursor: pointer; }
+  .plot2d .reg.clickable:hover { stroke: var(--text-2); stroke-width: 1.5; }
+  .plot2d .frame-out { fill: none; stroke: var(--baseline); stroke-width: 1; pointer-events: none; }
+  .plot2d .cut { stroke: var(--text-1); stroke-width: 1.5; stroke-linecap: round; pointer-events: none; }
+  .plot2d .cut.latest { stroke-width: 2.5; stroke-dasharray: 6 4; }
+  .plot2d .reg-next { fill: none; stroke: var(--series-a); stroke-width: 2; stroke-dasharray: 5 3; pointer-events: none; }
+  .plot2d .reg-focus { fill: none; stroke: var(--text-1); stroke-width: 2.5; pointer-events: none; }
+  .plot2d .pt { pointer-events: none; }
+  .plot2d .reg-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; fill: var(--text-2); pointer-events: none; paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; stroke-linejoin: round; }
+
+  .part { display: grid; grid-template-columns: minmax(250px, 340px) 1fr; gap: 20px; align-items: start; }
+  .part[hidden] { display: none; }
+  @media (max-width: 620px) { .part { grid-template-columns: 1fr; } }
+  .part-plot { display: flex; flex-direction: column; gap: 8px; }
+  .part-key { font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
+  .part-side { display: flex; flex-direction: column; gap: 12px; }
+  .ent-meter { display: flex; flex-direction: column; gap: 6px; background: var(--inset); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .ent-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+  .ent-value { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; font-size: 28px; font-weight: 600; color: var(--text-1); line-height: 1.1; }
+  .ent-value .unit { font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .ent-sub { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .ent-history { display: flex; flex-direction: column; gap: 6px; }
+  .ent-history-title { font-size: 12px; color: var(--text-2); }
+  .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .group-card {
+    background: var(--inset); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .group-card .gc-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .group-card .gc-name { font-weight: 600; font-size: 14px; }
+  .group-card .gc-n { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+  .dot-cluster { display: flex; flex-wrap: wrap; gap: 3px; }
+  .dot-cluster i { width: 10px; height: 10px; border-radius: 50%; background: var(--series-b); }
+  .dot-cluster i.a { background: var(--series-a); }
+  .group-card .gc-h { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .group-card .gc-h b { color: var(--text-1); }
+
+  .summary {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;
+    border-top: 1px solid var(--border); padding-top: 16px;
+  }
+  .summary .stat { display: flex; flex-direction: column; gap: 4px; }
+  .summary .stat .label { font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+  .summary .stat .value { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .summary .stat.gain .value { color: var(--series-a); }
+  .summary .stat .formula { font-size: 11.5px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+  .foot { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: -6px; }
+
+  /* ---------- Stage 3: tree builder ---------- */
+  .tree-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .tree-controls button {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 600;
+    border-radius: 10px; padding: 10px 18px; cursor: pointer; border: 1px solid var(--series-a);
+    background: var(--series-a); color: #fff;
+  }
+  .tree-controls button:disabled { background: var(--grid); border-color: var(--grid); color: var(--muted); cursor: default; }
+  .tree-controls button.ghost { background: transparent; color: var(--text-2); border-color: var(--border); }
+  .tree-controls button:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+  .tree-status { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--text-2); }
+  .tree-status.complete { color: var(--status-good); font-weight: 600; }
+
+  .tree-wrap { position: relative; overflow-x: auto; padding: 6px 4px 10px; display: flex; justify-content: center; }
+  .tree-lines { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+  .tree-root { position: relative; padding: 4px; flex-shrink: 0; }
+  .tree-node-block { display: flex; flex-direction: column; align-items: center; position: relative; }
+  .children-row { display: flex; gap: 18px; justify-content: center; margin-top: 38px; position: relative; }
+
+  .node-box {
+    position: relative; z-index: 1;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 8px 13px; background: var(--surface-1);
+    min-width: 84px; text-align: center;
+  }
+  .node-box.pending { border-style: dashed; border-color: var(--muted); background: var(--inset); }
+  .node-box.split { border-color: var(--series-a); }
+  .node-box.leaf-yes { background: var(--series-a-soft); border-color: var(--series-a); }
+  .node-box.leaf-no { background: var(--series-b-soft); border-color: var(--series-b); }
+  .node-title { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 12.5px; color: var(--text-1); white-space: nowrap; }
+  .node-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-2); white-space: nowrap; }
+
+  .edge-label {
+    position: absolute; z-index: 2; transform: translate(-50%, -50%);
+    background: var(--surface-1); color: var(--text-2);
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .connector-line { stroke: var(--baseline); stroke-width: 1.5; fill: none; }
+  .node-box { cursor: pointer; transition: box-shadow .15s ease; }
+  .node-box:hover, .node-box:focus-visible { box-shadow: 0 0 0 3px var(--grid); outline: none; }
+  .node-box.split:hover, .node-box.split:focus-visible { box-shadow: 0 0 0 3px var(--series-a-soft); }
+  .tree-hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+  .why-card {
+    position: fixed; z-index: 50; width: 380px; max-width: calc(100vw - 16px);
+    background: var(--surface-1); color: var(--text-1);
+    border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.20);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .why-card[hidden] { display: none; }
+  .why-head { display: flex; flex-direction: column; gap: 2px; }
+  .why-head b { font-family: 'Libre Franklin', 'Segoe UI', sans-serif; font-size: 15px; }
+  .why-head span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+  .why-cand { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; }
+  .why-cand.winner { border-color: var(--series-a); background: var(--series-a-soft); }
+  .why-cand-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 600; }
+  .why-cand-top .ig { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  .why-cand.winner .ig { color: var(--series-a); }
+  .why-calc { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--text-2); line-height: 1.5; overflow-wrap: anywhere; }
+  .why-foot { font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+  .why-foot b { color: var(--text-1); }
+  @media (prefers-reduced-motion: reduce) { .node-box.split { transition: none; } }
+
+  .step-log { display: flex; flex-direction: column; gap: 12px; }
+  .step-entry { border-top: 1px solid var(--border); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .step-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+  .step-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--series-a); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .step-node { font-weight: 600; font-size: 14px; }
+  .step-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--muted); }
+  .step-table { display: flex; flex-direction: column; gap: 5px; }
+  .step-row { display: grid; grid-template-columns: 112px 1fr 52px; align-items: center; gap: 10px; }
+  .step-row .sr-name { font-size: 12px; color: var(--text-2); }
+  .step-row.winner .sr-name { color: var(--text-1); font-weight: 600; }
+  .step-row .sr-track { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .step-row .sr-fill { height: 100%; border-radius: 4px; background: var(--muted); }
+  .step-row.winner .sr-fill { background: var(--series-a); }
+  .step-row .sr-val { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
+  .step-result { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+  .step-result b { color: var(--text-1); }
+
+  /* ---------- Stage 4: naive-p comparison ---------- */
+  .naive-toggle-row { display: flex; align-items: center; gap: 10px; }
+  .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch-track { position: absolute; inset: 0; background: var(--grid); border-radius: 999px; transition: background-color .15s ease; pointer-events: none; }
+  .switch-thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-1); border: 1px solid var(--border); transition: transform .15s ease; }
+  .switch input:checked ~ .switch-track { background: var(--series-b); }
+  .switch input:checked ~ .switch-track .switch-thumb { transform: translateX(16px); }
+  .switch input:focus-visible ~ .switch-track { outline: 2px solid var(--series-a); outline-offset: 2px; }
+  .switch-label { font-size: 13px; color: var(--text-2); }
+
+  .naive-path { fill: none; stroke: var(--series-b); stroke-width: 2; stroke-dasharray: 5 4; stroke-linecap: round; }
+  .naive-dot { fill: var(--series-b); stroke: var(--surface-1); stroke-width: 2; }
+  .naive-path.hidden, .naive-dot.hidden { display: none; }
+
+  .curve-legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--text-2); margin-top: 8px; }
+  .curve-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .line-swatch { display: inline-block; width: 16px; height: 2px; border-radius: 1px; }
+  .line-swatch.entropy { background: var(--series-a); }
+  .line-swatch.naive { background-image: repeating-linear-gradient(to right, var(--series-b) 0 5px, transparent 5px 9px); }
+
+  .naive-note { font-size: 13px; line-height: 1.55; color: var(--text-2); background: var(--inset); border-left: 3px solid var(--series-b); border-radius: 6px; padding: 10px 14px; margin: 0; }
+  .naive-note b { color: var(--text-1); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">Interactive · Information Theory</p>
+    <h1>Entropy Lab</h1>
+    <p class="lede">In 1948 Claude Shannon defined a number for how <b>impure</b> a set of outcomes is — the fewer bits you'd need, on average, to describe an outcome drawn from it. Decision trees use this number, <b>entropy</b>, to decide which question to ask first. Drag the slider below to build a feel for its shape.</p>
+  </header>
+
+  <section class="card section-a" aria-labelledby="sectionA-title">
+    <h2 id="sectionA-title">1. How impure is a set?</h2>
+    <p class="section-intro">A set with everything the same class is perfectly pure — zero entropy. A 50/50 split is the most impure a two-class set can be. Move the slider to change the mix of Class A (circles) and Class B (stars) among 50 points, and watch the curve, the scatter plot, and the number move together. The dashed line is the best single split of the plot — and it can never gain more than the set's entropy.</p>
+
+    <div class="two-col">
+      <div class="control-col">
+        <label for="pSlider">p(Class A)</label>
+        <input type="range" id="pSlider" min="0" max="1" step="0.02" value="0.64" />
+        <div class="p-readout">p(A) = <b id="pValue">0.64</b>, p(B) = <b id="pBValue">0.36</b></div>
+        <svg class="scatter-svg" id="scatterSvg" viewBox="0 0 300 300" role="img" aria-label="Scatter plot of 50 points">
+          <rect class="plot-frame" x="30" y="10" width="260" height="260"></rect>
+          <g id="scatterGrid"></g>
+          <line id="splitLine" class="split-line" x1="0" y1="0" x2="0" y2="0"></line>
+          <g id="scatterPoints"></g>
+          <g id="scatterAxes"></g>
+        </svg>
+        <div class="legend">
+          <span><svg viewBox="-7 -7 14 14" aria-hidden="true"><circle class="marker-a" r="5"></circle></svg>Class A (circle)</span>
+          <span><svg viewBox="-7 -7 14 14" aria-hidden="true"><path id="legendStar" class="marker-b" d=""></path></svg>Class B (star)</span>
+        </div>
+      </div>
+      <div class="curve-col">
+        <div>
+          <svg id="curveSvg" viewBox="0 0 340 200" role="img" aria-label="Entropy curve, peaked at p = 0.5">
+            <g id="gridLines"></g>
+            <path id="naivePath" class="naive-path hidden" d=""></path>
+            <path id="curvePath" class="curve-path" d=""></path>
+            <circle id="naiveDot" class="naive-dot hidden" r="5" cx="0" cy="0"></circle>
+            <circle id="liveDot" class="live-dot" r="5" cx="0" cy="0"></circle>
+            <g id="axisLabels"></g>
+          </svg>
+          <div class="curve-legend" id="curveLegend" hidden>
+            <span><i class="line-swatch entropy"></i>Entropy H(p)</span>
+            <span><i class="line-swatch naive"></i>Naive: just p</span>
+          </div>
+        </div>
+        <div class="split-readout" id="splitReadout" style="margin-top:14px" aria-controls="calcPanel" aria-expanded="false"></div>
+      </div>
+    </div>
+
+    <div class="naive-toggle-row">
+      <label class="switch">
+        <input type="checkbox" id="naiveToggle">
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+      </label>
+      <span class="switch-label">Compare with naive "just use p"</span>
+    </div>
+
+    <div class="formula-readout">
+      <div class="h-value"><span id="hValue">0.941</span><span class="unit">bits</span></div>
+      <div class="formula" id="formulaText"></div>
+    </div>
+
+    <p class="naive-note" id="naiveNote" hidden></p>
+  </section>
+
+  <div class="flow-connector" role="presentation">now put H(p) to work on a real question</div>
+
+  <section class="card section-b" aria-labelledby="sectionB-title">
+    <h2 id="sectionB-title">2. Which question splits the data best?</h2>
+    <div class="ds-row">
+      <span class="ds-label">Dataset</span>
+      <div class="feature-picker" id="datasetSwitch" role="group" aria-label="Choose a dataset for sections 2 and 3"></div>
+    </div>
+    <p class="ds-caption" id="dsCaption"></p>
+
+    <p class="section-intro" id="intro2"></p>
+
+    <div class="root-chip" id="rootChip"></div>
+
+    <details class="data-details" id="dataDetails">
+      <summary id="dataSummary">View the raw dataset</summary>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr id="dataHeadRow"></tr></thead>
+          <tbody id="dataTableBody"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <p class="section-intro num-note" id="numNote" hidden><b>How a threshold is found:</b> sort the column. Between every pair of neighbouring values there is a possible cut; since no row sits between two neighbours, any number in that gap makes the same split, so we label the cut with the <b>midpoint</b> (43 and 52 → 47.5). Only cuts where the class flips need testing — a cut between two same-class neighbours can't beat one at a class change. Each cut sends rows to “≤” or “&gt;”, and the cut with the highest Information Gain represents the column. The “43|52” tags below show which two neighbours each cut sits between.</p>
+
+    <div class="feature-picker" id="featurePicker"></div>
+    <div class="leaderboard" id="leaderboard"></div>
+    <div class="scan" id="scanBlock" hidden>
+      <p class="scan-title" id="scanTitle"></p>
+      <p class="scan-title scan-why" id="scanWhy"></p>
+      <div class="scan-body">
+        <svg class="plot2d" id="scanPlot" role="img" aria-label="Scatter plot of the data with the best cut on the selected column"></svg>
+        <div class="leaderboard" id="scanRows"></div>
+      </div>
+    </div>
+    <div class="groups" id="groupCards"></div>
+
+    <div class="summary" id="summary">
+      <div class="stat">
+        <div class="label">Weighted avg. entropy</div>
+        <div class="value" id="weightedVal">—</div>
+        <div class="formula" id="weightedFormula"></div>
+      </div>
+      <div class="stat gain">
+        <div class="label">Information Gain</div>
+        <div class="value" id="gainVal">—</div>
+        <div class="formula" id="gainFormula"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="flow-connector" role="presentation">one split isn't a tree — build the whole thing</div>
+
+  <section class="card section-c" aria-labelledby="sectionC-title">
+    <h2 id="sectionC-title">3. Building the full tree, one split at a time</h2>
+    <p class="section-intro" id="intro3"></p>
+
+    <div class="tree-controls">
+      <button type="button" id="buildStepBtn">Build next split →</button>
+      <button type="button" id="resetTreeBtn" class="ghost">Reset</button>
+      <span class="tree-status" id="treeStatus" aria-live="polite"></span>
+    </div>
+
+    <div class="part" id="partition" hidden>
+      <div class="part-plot">
+        <svg class="plot2d" id="partitionSvg" role="img" aria-label="Scatter plot split into regions as the tree grows. The step log below describes each split."></svg>
+        <div class="part-key">● Yes (circle) · ★ No (star) · <b>tinted region</b> = pure · <b>dashed blue outline</b> = next region to split. Click a region to see why it is what it is.</div>
+      </div>
+      <div class="part-side">
+        <div class="ent-meter" aria-live="polite">
+          <div class="ent-label">Weighted entropy of all regions</div>
+          <div class="ent-value"><span id="entNow">—</span><span class="unit">bits</span></div>
+          <div class="ent-sub" id="entSub"></div>
+        </div>
+        <div class="ent-history">
+          <div class="ent-history-title">Impurity after each split</div>
+          <div class="leaderboard" id="entHistory"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tree-wrap" id="treeWrap" role="img" aria-label="Decision tree diagram, grows as splits are built. Full detail for each step is in the log below.">
+      <svg class="tree-lines" id="treeLines"></svg>
+      <div class="tree-root" id="treeRoot"></div>
+    </div>
+
+    <p class="tree-hint">Click any node — question, leaf, or waiting — to see the reasoning behind it. Click anywhere else (or press Esc) to close.</p>
+
+    <div class="step-log" id="stepLog"></div>
+  </section>
+
+  <footer class="foot">Built with Shannon's entropy formula and Quinlan's Play Tennis dataset.</footer>
+
+</div>
+
+<aside class="calc-panel" id="calcPanel" aria-label="Full calculation of the best split" hidden></aside>
+
+<script>
+(function () {
+  "use strict";
+
+  function h(p) {
+    if (p <= 0 || p >= 1) return 0;
+    return -(p * Math.log2(p) + (1 - p) * Math.log2(1 - p));
+  }
+
+  // ---------- Section 1: slider ----------
+  var slider = document.getElementById('pSlider');
+  var pValueEl = document.getElementById('pValue');
+  var pBValueEl = document.getElementById('pBValue');
+  var hValueEl = document.getElementById('hValue');
+  var formulaEl = document.getElementById('formulaText');
+  var liveDot = document.getElementById('liveDot');
+
+  var PLOT = { left: 46, right: 322, top: 12, bottom: 168 };
+  var plotW = PLOT.right - PLOT.left;
+  var plotH = PLOT.bottom - PLOT.top;
+  function xOf(p) { return PLOT.left + p * plotW; }
+  function yOf(hv) { return PLOT.bottom - hv * plotH; }
+
+  // ---- 2D scatter: circles (A) vs stars (B), best axis-aligned split ----
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var N_POINTS = 50;
+  var SC = { left: 30, right: 290, top: 10, bottom: 270 };
+  function sx(v) { return SC.left + v * (SC.right - SC.left); }
+  function sy(v) { return SC.bottom - v * (SC.bottom - SC.top); }
+
+  function starPath(R, r) {
+    var d = '';
+    for (var i = 0; i < 10; i++) {
+      var ang = -Math.PI / 2 + i * Math.PI / 5;
+      var rad = i % 2 === 0 ? R : r;
+      d += (i === 0 ? 'M' : ' L') + (rad * Math.cos(ang)).toFixed(2) + ',' + (rad * Math.sin(ang)).toFixed(2);
+    }
+    return d + ' Z';
+  }
+  document.getElementById('legendStar').setAttribute('d', starPath(6.5, 2.8));
+
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  var scatterPts = (function () {
+    var rand = mulberry32(11);
+    var pts = [];
+    var guard = 0;
+    while (pts.length < N_POINTS && guard < 20000) {
+      guard++;
+      var x = 0.04 + rand() * 0.92, y = 0.04 + rand() * 0.92;
+      var ok = pts.every(function (q) { return Math.hypot(q.x - x, q.y - y) > 0.08; });
+      if (!ok) continue;
+      var noise = (rand() + rand() + rand() - 1.5) * 0.14;
+      pts.push({ x: x, y: y, score: 0.7 * x + 0.3 * y + noise });
+    }
+    var order = pts.map(function (_, i) { return i; }).sort(function (a, b) { return pts[b].score - pts[a].score; });
+    order.forEach(function (idx, rank) { pts[idx].rank = rank; });
+    return pts;
+  })();
+
+  (function buildScatter() {
+    var gridG = document.getElementById('scatterGrid');
+    var axesG = document.getElementById('scatterAxes');
+    var pointsG = document.getElementById('scatterPoints');
+
+    [0.5].forEach(function (t) {
+      var v = document.createElementNS(SVGNS, 'line');
+      v.setAttribute('x1', sx(t)); v.setAttribute('x2', sx(t)); v.setAttribute('y1', SC.top); v.setAttribute('y2', SC.bottom);
+      v.setAttribute('class', 'plot-grid'); gridG.appendChild(v);
+      var hz = document.createElementNS(SVGNS, 'line');
+      hz.setAttribute('x1', SC.left); hz.setAttribute('x2', SC.right); hz.setAttribute('y1', sy(t)); hz.setAttribute('y2', sy(t));
+      hz.setAttribute('class', 'plot-grid'); gridG.appendChild(hz);
+    });
+
+    [0, 0.5, 1].forEach(function (t) {
+      var xl = document.createElementNS(SVGNS, 'text');
+      xl.setAttribute('x', sx(t)); xl.setAttribute('y', SC.bottom + 13); xl.setAttribute('text-anchor', 'middle');
+      xl.setAttribute('class', 'axis-label'); xl.textContent = t.toString(); axesG.appendChild(xl);
+      var yl = document.createElementNS(SVGNS, 'text');
+      yl.setAttribute('x', SC.left - 6); yl.setAttribute('y', sy(t) + 3); yl.setAttribute('text-anchor', 'end');
+      yl.setAttribute('class', 'axis-label'); yl.textContent = t.toString(); axesG.appendChild(yl);
+    });
+    var xt = document.createElementNS(SVGNS, 'text');
+    xt.setAttribute('x', (SC.left + SC.right) / 2); xt.setAttribute('y', SC.bottom + 27); xt.setAttribute('text-anchor', 'middle');
+    xt.setAttribute('class', 'axis-label'); xt.textContent = 'x₁'; axesG.appendChild(xt);
+    var yt = document.createElementNS(SVGNS, 'text');
+    yt.setAttribute('x', -((SC.top + SC.bottom) / 2)); yt.setAttribute('y', 8); yt.setAttribute('text-anchor', 'middle');
+    yt.setAttribute('transform', 'rotate(-90)'); yt.setAttribute('class', 'axis-label'); yt.textContent = 'x₂'; axesG.appendChild(yt);
+
+    var star = starPath(7.5, 3.2);
+    scatterPts.forEach(function (pt) {
+      var g = document.createElementNS(SVGNS, 'g');
+      g.setAttribute('transform', 'translate(' + sx(pt.x).toFixed(1) + ',' + sy(pt.y).toFixed(1) + ')');
+      var c = document.createElementNS(SVGNS, 'circle');
+      c.setAttribute('r', 5.5); c.setAttribute('class', 'marker-a');
+      var s = document.createElementNS(SVGNS, 'path');
+      s.setAttribute('d', star); s.setAttribute('class', 'marker-b hide');
+      g.appendChild(c); g.appendChild(s);
+      pointsG.appendChild(g);
+      pt.circle = c; pt.star = s;
+    });
+  })();
+
+  function bestSplit(k) {
+    if (k <= 0 || k >= N_POINTS) return null;
+    var parentH = h(k / N_POINTS);
+    var best = null;
+    ['x', 'y'].forEach(function (axis) {
+      var sorted = scatterPts.slice().sort(function (a, b) { return a[axis] - b[axis]; });
+      var totalA = k, leftA = 0;
+      for (var i = 0; i < sorted.length - 1; i++) {
+        if (sorted[i].rank < k) leftA++;
+        if (sorted[i + 1][axis] === sorted[i][axis]) continue;
+        var leftN = i + 1, rightN = N_POINTS - leftN, rightA = totalA - leftA;
+        var lh = h(leftA / leftN), rh = h(rightA / rightN);
+        var wh = (leftN / N_POINTS) * lh + (rightN / N_POINTS) * rh;
+        var gain = parentH - wh;
+        if (!best || gain > best.gain + 1e-12) {
+          best = { axis: axis, t: (sorted[i][axis] + sorted[i + 1][axis]) / 2, leftN: leftN, leftA: leftA, rightN: rightN, rightA: rightA, lh: lh, rh: rh, wh: wh, gain: gain, parentH: parentH };
+        }
+      }
+    });
+    return best;
+  }
+
+  function renderScatter(p) {
+    var k = Math.round(p * N_POINTS);
+    scatterPts.forEach(function (pt) {
+      var isA = pt.rank < k;
+      pt.circle.classList.toggle('hide', !isA);
+      pt.star.classList.toggle('hide', isA);
+    });
+
+    var line = document.getElementById('splitLine');
+    var box = document.getElementById('splitReadout');
+    var svg = document.getElementById('scatterSvg');
+    var sp = bestSplit(k);
+
+    lastSplit = sp ? { k: k, sp: sp } : null;
+    box.classList.toggle('clickable', !!sp);
+    if (sp) { box.setAttribute('role', 'button'); box.tabIndex = 0; } else { box.removeAttribute('role'); box.removeAttribute('tabindex'); }
+
+    if (!sp) {
+      if (calcOpen) setCalcOpen(false, false);
+      line.style.display = 'none';
+      box.innerHTML = '<div class="sp-pure">All ' + N_POINTS + ' points are Class ' + (k === 0 ? 'B' : 'A') + '. Entropy is <b>0</b>, so there’s nothing to separate — no split can gain anything.</div>';
+      svg.setAttribute('aria-label', 'Scatter plot of ' + N_POINTS + ' points, all Class ' + (k === 0 ? 'B stars' : 'A circles') + '. No split needed.');
+      return;
+    }
+
+    line.style.display = '';
+    if (sp.axis === 'x') {
+      line.setAttribute('x1', sx(sp.t)); line.setAttribute('x2', sx(sp.t));
+      line.setAttribute('y1', SC.top); line.setAttribute('y2', SC.bottom);
+    } else {
+      line.setAttribute('y1', sy(sp.t)); line.setAttribute('y2', sy(sp.t));
+      line.setAttribute('x1', SC.left); line.setAttribute('x2', SC.right);
+    }
+
+    var name = sp.axis === 'x' ? 'x₁' : 'x₂';
+    var lo = sp.axis === 'x' ? 'Left' : 'Below', hi = sp.axis === 'x' ? 'Right' : 'Above';
+    function grp(label, a, n, hv) {
+      return '<div class="sp-group"><span class="lbl">' + label + '</span>' +
+        '<span><span class="ca">●</span> ' + a + ' &nbsp;<span class="cb">★</span> ' + (n - a) + '</span>' +
+        '<span>H = ' + hv.toFixed(3) + '</span></div>';
+    }
+    box.innerHTML =
+      '<div class="sp-rule">Best split: <b>' + name + ' &lt; ' + sp.t.toFixed(2) + '</b></div>' +
+      '<div class="sp-groups">' + grp(lo, sp.leftA, sp.leftN, sp.lh) + grp(hi, sp.rightA, sp.rightN, sp.rh) + '</div>' +
+      '<div class="sp-gain"><span>Weighted H = <b>' + sp.wh.toFixed(3) + '</b> · Information gain = <b>' + sp.gain.toFixed(3) + '</b> of <b>' + sp.parentH.toFixed(3) + '</b> possible</span>' +
+      '<div class="sp-track"><div class="sp-fill" style="width:' + Math.max(0, (sp.gain / sp.parentH) * 100).toFixed(1) + '%"></div></div></div>' +
+      '<div class="sp-hint">Click for the full calculation →</div>';
+    svg.setAttribute('aria-label', 'Scatter plot of ' + N_POINTS + ' points: ' + k + ' circles, ' + (N_POINTS - k) + ' stars. Best split at ' + name + ' = ' + sp.t.toFixed(2) + ', information gain ' + sp.gain.toFixed(3) + '.');
+    if (calcOpen) renderCalc();
+  }
+
+  // ---- click the split card: full step-by-step calculation in the right column ----
+  var calcPanel = document.getElementById('calcPanel');
+  var splitBox = document.getElementById('splitReadout');
+  var calcOpen = false;
+  var lastSplit = null;
+
+  function termVal(cnt, n) {
+    var pr = cnt / n;
+    return pr > 0 ? -pr * Math.log2(pr) : 0;
+  }
+  function termRow(cls, sym, cnt, n) {
+    return '<div class="calc-term"><span class="' + cls + '">' + sym + '</span>' +
+      '<span>p = ' + cnt + '/' + n + ' = ' + (cnt / n).toFixed(3) + '</span>' +
+      '<span>−p·log₂p = ' + termVal(cnt, n).toFixed(3) + '</span></div>';
+  }
+  function entropyBlock(label, a, n, hv) {
+    return '<div class="calc-block"><div class="calc-sub">' + label + ' · ' + n + ' points</div>' +
+      termRow('ca', '●', a, n) + termRow('cb', '★', n - a, n) +
+      '<div class="calc-eq">H = ' + termVal(a, n).toFixed(3) + ' + ' + termVal(n - a, n).toFixed(3) + ' = <b>' + hv.toFixed(3) + '</b></div></div>';
+  }
+
+  function renderCalc() {
+    if (!lastSplit) return;
+    var k = lastSplit.k, sp = lastSplit.sp;
+    var name = sp.axis === 'x' ? 'x₁' : 'x₂';
+    var lo = sp.axis === 'x' ? 'Left' : 'Below', hi = sp.axis === 'x' ? 'Right' : 'Above';
+    var wl = (sp.leftN / N_POINTS) * sp.lh, wr = (sp.rightN / N_POINTS) * sp.rh;
+    var anyZero = sp.leftA === 0 || sp.leftA === sp.leftN || sp.rightA === 0 || sp.rightA === sp.rightN;
+
+    calcPanel.innerHTML =
+      '<div class="calc-head"><h3>Full calculation</h3><button type="button" class="calc-exit" id="calcExit">✕ Exit</button></div>' +
+      '<p class="calc-lead">Best split found: <b>' + name + ' &lt; ' + sp.t.toFixed(2) + '</b>. The lab tried every possible cut on x₁ and x₂ and kept the one with the highest information gain. Every entropy below uses <b>H = Σ −p·log₂p</b> over the two classes.</p>' +
+
+      '<div class="calc-step"><div class="calc-step-title"><span class="calc-num">1</span>Entropy before the split</div>' +
+        entropyBlock('All points', k, N_POINTS, sp.parentH) + '</div>' +
+
+      '<div class="calc-step"><div class="calc-step-title"><span class="calc-num">2</span>Entropy of each side</div>' +
+        entropyBlock(lo, sp.leftA, sp.leftN, sp.lh) + entropyBlock(hi, sp.rightA, sp.rightN, sp.rh) +
+        (anyZero ? '<p class="calc-note">A class with no members adds 0 (by convention 0·log₂0 = 0), so a pure side has H = 0.</p>' : '') + '</div>' +
+
+      '<div class="calc-step"><div class="calc-step-title"><span class="calc-num">3</span>Weighted entropy after the split</div>' +
+        '<p class="calc-note">Each side counts in proportion to how many points it holds.</p>' +
+        '<div class="calc-eq">Weighted H = (' + sp.leftN + '/' + N_POINTS + ')·' + sp.lh.toFixed(3) + ' + (' + sp.rightN + '/' + N_POINTS + ')·' + sp.rh.toFixed(3) + '<br>' +
+        '= ' + wl.toFixed(3) + ' + ' + wr.toFixed(3) + ' = <b>' + sp.wh.toFixed(3) + '</b></div></div>' +
+
+      '<div class="calc-step"><div class="calc-step-title"><span class="calc-num">4</span>Information gain</div>' +
+        '<p class="calc-note">How much entropy the split removed.</p>' +
+        '<div class="calc-eq result">IG = H(before) − Weighted H<br>= ' + sp.parentH.toFixed(3) + ' − ' + sp.wh.toFixed(3) + ' = <b>' + sp.gain.toFixed(3) + ' bits</b><br>' +
+        '<span style="color:var(--text-2)">' + Math.max(0, (sp.gain / sp.parentH) * 100).toFixed(1) + '% of the ' + sp.parentH.toFixed(3) + ' bits of impurity removed</span></div></div>';
+
+    document.getElementById('calcExit').addEventListener('click', function () { setCalcOpen(false, true); });
+  }
+
+  function setCalcOpen(open, moveFocus) {
+    if (open && !lastSplit) return;
+    calcOpen = open;
+    calcPanel.hidden = !open;
+    splitBox.classList.toggle('open', open);
+    window.dispatchEvent(new Event('resize')); // page reflowed: let the tree redraw its connectors
+    splitBox.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      renderCalc();
+      if (moveFocus) document.getElementById('calcExit').focus();
+    } else if (moveFocus) {
+      splitBox.focus();
+    }
+  }
+
+  splitBox.addEventListener('click', function () { setCalcOpen(true, true); });
+  splitBox.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && lastSplit) { e.preventDefault(); setCalcOpen(true, true); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && calcOpen) setCalcOpen(false, true);
+  });
+
+  // static curve + gridlines + axis labels
+  (function buildCurve() {
+    var pts = [];
+    for (var i = 0; i <= 100; i++) {
+      var p = i / 100;
+      pts.push(xOf(p) + ',' + yOf(h(p)));
+    }
+    document.getElementById('curvePath').setAttribute('d', 'M' + pts.join(' L'));
+
+    var gridG = document.getElementById('gridLines');
+    var axisG = document.getElementById('axisLabels');
+    var ticks = [0, 0.25, 0.5, 0.75, 1];
+    ticks.forEach(function (t) {
+      var hl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      hl.setAttribute('x1', PLOT.left); hl.setAttribute('x2', PLOT.right);
+      hl.setAttribute('y1', yOf(t)); hl.setAttribute('y2', yOf(t));
+      hl.setAttribute('class', t === 0 ? 'baseline' : 'grid-line');
+      gridG.appendChild(hl);
+
+      var vl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      vl.setAttribute('x1', xOf(t)); vl.setAttribute('x2', xOf(t));
+      vl.setAttribute('y1', PLOT.top); vl.setAttribute('y2', PLOT.bottom);
+      vl.setAttribute('class', 'grid-line');
+      gridG.appendChild(vl);
+
+      var ylab = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      ylab.setAttribute('x', PLOT.left - 8); ylab.setAttribute('y', yOf(t) + 3);
+      ylab.setAttribute('text-anchor', 'end'); ylab.setAttribute('class', 'axis-label');
+      ylab.textContent = t.toString();
+      axisG.appendChild(ylab);
+
+      var xlab = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      xlab.setAttribute('x', xOf(t)); xlab.setAttribute('y', PLOT.bottom + 16);
+      xlab.setAttribute('text-anchor', 'middle'); xlab.setAttribute('class', 'axis-label');
+      xlab.textContent = t.toString();
+      axisG.appendChild(xlab);
+    });
+
+    var xAxisTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    xAxisTitle.setAttribute('x', (PLOT.left + PLOT.right) / 2); xAxisTitle.setAttribute('y', PLOT.bottom + 32);
+    xAxisTitle.setAttribute('text-anchor', 'middle'); xAxisTitle.setAttribute('class', 'axis-label');
+    xAxisTitle.textContent = 'p(Class A)';
+    axisG.appendChild(xAxisTitle);
+
+    var yAxisTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    yAxisTitle.setAttribute('x', -((PLOT.top + PLOT.bottom) / 2)); yAxisTitle.setAttribute('y', 12);
+    yAxisTitle.setAttribute('text-anchor', 'middle'); yAxisTitle.setAttribute('class', 'axis-label');
+    yAxisTitle.setAttribute('transform', 'rotate(-90)');
+    yAxisTitle.textContent = 'H (bits)';
+    axisG.appendChild(yAxisTitle);
+
+    document.getElementById('naivePath').setAttribute('d', 'M' + xOf(0) + ',' + yOf(0) + ' L' + xOf(1) + ',' + yOf(1));
+  })();
+
+  var naiveToggle = document.getElementById('naiveToggle');
+  var naiveDot = document.getElementById('naiveDot');
+  var naivePathEl = document.getElementById('naivePath');
+  var curveLegend = document.getElementById('curveLegend');
+  var naiveNote = document.getElementById('naiveNote');
+
+  function naiveNoteText(p) {
+    var naiveVal = p;
+    var entropyVal = h(p);
+    if (p <= 0 || p >= 1) {
+      return 'At p = ' + p.toFixed(2) + ': naive score = ' + naiveVal.toFixed(2) + ', entropy = ' + entropyVal.toFixed(3) + ' bits. This set has only one class — genuinely pure, and entropy correctly reads <b>0</b>. Naive p only reads 0 because the pure class happens to be "B" here; flip which label is A and a pure set would score a misleading <b>1.00</b>.';
+    }
+    return 'At p = ' + p.toFixed(2) + ': naive score = ' + naiveVal.toFixed(2) + ', entropy = ' + entropyVal.toFixed(3) + ' bits. Past p = 0.5, naive p keeps climbing toward 1 even though the set is getting <b>purer</b>, not more mixed — the opposite of what an impurity score should do. Entropy peaks at 0.5 and comes back down to 0 at both edges, because purity doesn’t care which label is "A".';
+  }
+
+  function renderSlider() {
+    var p = parseFloat(slider.value);
+    var hv = h(p);
+
+    document.documentElement.style.setProperty('--p', (p * 100).toFixed(0));
+    slider.style.setProperty('--p', (p * 100).toFixed(0));
+    pValueEl.textContent = p.toFixed(2);
+    pBValueEl.textContent = (1 - p).toFixed(2);
+
+    naiveDot.setAttribute('cx', xOf(p));
+    naiveDot.setAttribute('cy', yOf(p));
+    if (naiveToggle.checked) { naiveNote.innerHTML = naiveNoteText(p); }
+    hValueEl.textContent = hv.toFixed(3);
+
+    renderScatter(p);
+
+    liveDot.setAttribute('cx', xOf(p));
+    liveDot.setAttribute('cy', yOf(hv));
+
+    if (p <= 0 || p >= 1) {
+      formulaEl.textContent = 'H(' + p.toFixed(2) + ') = 0.000  (a pure set has zero entropy)';
+    } else {
+      formulaEl.textContent = 'H(' + p.toFixed(2) + ') = −' + p.toFixed(2) + '·log₂(' + p.toFixed(2) + ') − ' + (1 - p).toFixed(2) + '·log₂(' + (1 - p).toFixed(2) + ') = ' + hv.toFixed(3);
+    }
+  }
+  slider.addEventListener('input', renderSlider);
+  renderSlider();
+
+  naiveToggle.addEventListener('change', function () {
+    var on = naiveToggle.checked;
+    naivePathEl.classList.toggle('hidden', !on);
+    naiveDot.classList.toggle('hidden', !on);
+    curveLegend.hidden = !on;
+    naiveNote.hidden = !on;
+    if (on) { naiveNote.innerHTML = naiveNoteText(parseFloat(slider.value)); }
+  });
+
+  // ---------- Datasets: Sections 2 and 3 run on whichever one is selected ----------
+  var DATASETS = {
+    categorical: {
+      tab: 'Categorical', name: 'Play Tennis',
+      caption: 'Every column is a category (Sunny, Hot, Weak…), so a split makes one branch per value.',
+      noun: 'days', idHeader: 'Day', targetName: 'Play', target: 'play',
+      intro2: 'Quinlan\'s <cite>Play Tennis</cite> dataset (1986): 14 days, each described by Outlook, Temperature, Humidity and Wind, labeled whether tennis was played. A good split should pull the classes apart — lowering the average entropy of the resulting groups, using the exact H(p) formula from above. That drop is the <b>Information Gain</b>.',
+      intro3: 'Same 14 days, same four questions — but now the algorithm has to choose splits one at a time, always picking whichever remaining question gives the biggest Information Gain, and stopping a branch once it\'s pure. Click through and watch the tree assemble.',
+      features: [
+        { key: 'outlook',  label: 'Outlook',     head: 'Outlook',  values: ['Sunny', 'Overcast', 'Rain'] },
+        { key: 'temp',     label: 'Temperature', head: 'Temp',     values: ['Hot', 'Mild', 'Cool'] },
+        { key: 'humidity', label: 'Humidity',    head: 'Humidity', values: ['High', 'Normal'] },
+        { key: 'wind',     label: 'Wind',        head: 'Wind',     values: ['Weak', 'Strong'] }
+      ],
+      rows: [
+        { outlook: 'Sunny',    temp: 'Hot',  humidity: 'High',   wind: 'Weak',   play: 'No'  },
+        { outlook: 'Sunny',    temp: 'Hot',  humidity: 'High',   wind: 'Strong', play: 'No'  },
+        { outlook: 'Overcast', temp: 'Hot',  humidity: 'High',   wind: 'Weak',   play: 'Yes' },
+        { outlook: 'Rain',     temp: 'Mild', humidity: 'High',   wind: 'Weak',   play: 'Yes' },
+        { outlook: 'Rain',     temp: 'Cool', humidity: 'Normal', wind: 'Weak',   play: 'Yes' },
+        { outlook: 'Rain',     temp: 'Cool', humidity: 'Normal', wind: 'Strong', play: 'No'  },
+        { outlook: 'Overcast', temp: 'Cool', humidity: 'Normal', wind: 'Strong', play: 'Yes' },
+        { outlook: 'Sunny',    temp: 'Mild', humidity: 'High',   wind: 'Weak',   play: 'No'  },
+        { outlook: 'Sunny',    temp: 'Cool', humidity: 'Normal', wind: 'Weak',   play: 'Yes' },
+        { outlook: 'Rain',     temp: 'Mild', humidity: 'Normal', wind: 'Weak',   play: 'Yes' },
+        { outlook: 'Sunny',    temp: 'Mild', humidity: 'Normal', wind: 'Strong', play: 'Yes' },
+        { outlook: 'Overcast', temp: 'Mild', humidity: 'High',   wind: 'Strong', play: 'Yes' },
+        { outlook: 'Overcast', temp: 'Hot',  humidity: 'Normal', wind: 'Weak',   play: 'Yes' },
+        { outlook: 'Rain',     temp: 'Mild', humidity: 'High',   wind: 'Strong', play: 'No'  }
+      ]
+    },
+    numerical: {
+      tab: 'Numerical', name: 'Loan Approval', plot2d: true,
+      caption: 'Every column is a number, so a split is a threshold: rows go left (≤) or right (>) of a cut.',
+      noun: 'applicants', idHeader: '#', targetName: 'Approved', target: 'approved',
+      intro2: 'A made-up loan-approval dataset: 18 applicants, each described by Income and Credit score, labeled whether the loan was approved. Numbers have no natural groups, so a split has to pick a <b>threshold</b> — “Income ≤ 47.5” sends each applicant left or right. The lab tries every sensible cut, scores each with the same entropy and <b>Information Gain</b> maths, and keeps the best one for each column. With only two columns the whole dataset fits on one plot, so you can watch each cut land.',
+      intro3: 'Same 18 applicants and two numeric columns — each question is a threshold such as “Income ≤ 47.5”, which slices the plot with a vertical or horizontal line. Unlike a category, a numeric column can be asked again deeper in the tree with a new threshold, so a branch stops only once it\'s pure. Watch the regions split and the weighted entropy fall toward 0.',
+      features: [
+        { key: 'income', label: 'Income', head: 'Income', unit: 'k$',    numeric: true, axis: { min: 20,  max: 100, ticks: [20, 40, 60, 80, 100] } },
+        { key: 'credit', label: 'Credit', head: 'Credit', unit: 'score', numeric: true, axis: { min: 550, max: 775, ticks: [550, 600, 650, 700, 750] } }
+      ],
+      rows: [
+        { income: 62, credit: 570, approved: 'No'  },
+        { income: 66, credit: 605, approved: 'Yes' },
+        { income: 67, credit: 645, approved: 'No'  },
+        { income: 61, credit: 675, approved: 'Yes' },
+        { income: 43, credit: 655, approved: 'No'  },
+        { income: 91, credit: 755, approved: 'Yes' },
+        { income: 57, credit: 685, approved: 'Yes' },
+        { income: 59, credit: 575, approved: 'No'  },
+        { income: 28, credit: 715, approved: 'No'  },
+        { income: 30, credit: 740, approved: 'No'  },
+        { income: 85, credit: 600, approved: 'Yes' },
+        { income: 52, credit: 735, approved: 'Yes' },
+        { income: 69, credit: 745, approved: 'Yes' },
+        { income: 53, credit: 610, approved: 'No'  },
+        { income: 39, credit: 585, approved: 'No'  },
+        { income: 29, credit: 710, approved: 'No'  },
+        { income: 25, credit: 680, approved: 'No'  },
+        { income: 38, credit: 660, approved: 'No'  }
+      ]
+    }
+  };
+
+  // Active dataset — reassigned by setDataset()
+  var DS, DATA, TARGET, NOUN, FEATURES, FEATURE_LABELS, VALUE_ORDER, IS_NUM;
+  var rootH, allSplits, maxGain, lbRows;
+
+  function fmtNum(x) { return String(Math.round(x * 100) / 100); }
+
+  function entropyOfRows(rows) {
+    var yes = rows.filter(function (r) { return r[TARGET] === 'Yes'; }).length;
+    var p = rows.length ? yes / rows.length : 0;
+    return h(p);
+  }
+
+  function makeGroup(value, subset, total) {
+    var yes = subset.filter(function (r) { return r[TARGET] === 'Yes'; }).length;
+    return { value: value, rows: subset, yes: yes, no: subset.length - yes, entropy: entropyOfRows(subset), weight: total ? subset.length / total : 0 };
+  }
+
+  function finishSplit(feature, kind, groups, entropyBefore, extra) {
+    var weightedH = groups.reduce(function (sum, g) { return sum + g.weight * g.entropy; }, 0);
+    var split = { feature: feature, kind: kind, title: FEATURE_LABELS[feature], groups: groups, entropyBefore: entropyBefore, weightedH: weightedH, gain: entropyBefore - weightedH };
+    if (extra) Object.keys(extra).forEach(function (k) { split[k] = extra[k]; });
+    return split;
+  }
+
+  function classAt(s) { return s.yes && s.no ? 'Yes/No' : s.yes ? 'Yes' : 'No'; }
+
+  // Plain-language origin of a numeric cut: it sits halfway between the two neighbouring values it separates.
+  function midpointText(c) {
+    return '(' + fmtNum(c.lo) + ' + ' + fmtNum(c.hi) + ') / 2 = ' + fmtNum(c.threshold);
+  }
+
+  // Every cut on a numeric column worth testing: midpoints between neighbouring distinct values
+  // where the class flips. Returns one fully-scored split per cut, lowest threshold first.
+  function thresholdSplits(rows, feature, entropyBefore) {
+    var seen = {};
+    rows.forEach(function (r) {
+      var s = seen[r[feature]] || (seen[r[feature]] = { yes: false, no: false });
+      if (r[TARGET] === 'Yes') s.yes = true; else s.no = true;
+    });
+    var vals = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
+    var out = [];
+    for (var i = 0; i < vals.length - 1; i++) {
+      var a = seen[vals[i]], b = seen[vals[i + 1]];
+      var flips = (a.yes && a.no) || (b.yes && b.no) || a.yes !== b.yes;
+      if (!flips) continue;
+      var t = (vals[i] + vals[i + 1]) / 2;
+      var left = rows.filter(function (r) { return r[feature] <= t; });
+      var right = rows.filter(function (r) { return r[feature] > t; });
+      var lg = makeGroup('≤ ' + fmtNum(t), left, rows.length), rg = makeGroup('> ' + fmtNum(t), right, rows.length);
+      lg.name = FEATURE_LABELS[feature] + ' ≤ ' + fmtNum(t); rg.name = FEATURE_LABELS[feature] + ' > ' + fmtNum(t);
+      out.push(finishSplit(feature, 'num', [lg, rg], entropyBefore, {
+        threshold: t, title: FEATURE_LABELS[feature] + ' ≤ ' + fmtNum(t),
+        lo: vals[i], hi: vals[i + 1], loClass: classAt(a), hiClass: classAt(b)
+      }));
+    }
+    return out;
+  }
+
+  // Best split of `rows` on one column (null if a numeric column has no cut left to try).
+  function computeSplit(rows, feature) {
+    var entropyBefore = entropyOfRows(rows);
+    if (IS_NUM[feature]) {
+      var cuts = thresholdSplits(rows, feature, entropyBefore);
+      if (!cuts.length) return null;
+      var best = cuts.reduce(function (a, b) { return b.gain > a.gain + 1e-12 ? b : a; });
+      best.thresholds = cuts;
+      return best;
+    }
+    var groups = VALUE_ORDER[feature].map(function (val) {
+      return makeGroup(val, rows.filter(function (r) { return r[feature] === val; }), rows.length);
+    });
+    return finishSplit(feature, 'cat', groups, entropyBefore);
+  }
+
+  // A category is used up once asked on a path; a numeric column can be asked again with a new cut.
+  function candidateSplits(rows, used) {
+    return FEATURES.filter(function (f) { return IS_NUM[f] || used.indexOf(f) === -1; })
+      .map(function (f) { return computeSplit(rows, f); })
+      .filter(Boolean);
+  }
+  function pickBest(candidates) {
+    return candidates.reduce(function (a, b) { return b.gain > a.gain ? b : a; });
+  }
+
+  // ---------- 2D plot: points + shaded regions + cut lines ----------
+  // Shared by Section 2 (one candidate cut) and Section 3 (the partition that grows with the tree).
+  var PV = { W: 340, H: 290, l: 48, r: 10, t: 10, b: 40 };
+  var STAR_D = starPath(7, 3);
+
+  function copyBounds(b) { return { x0: b.x0, x1: b.x1, y0: b.y0, y1: b.y1 }; }
+  function fullBounds() {
+    var X = DS.features[0].axis, Y = DS.features[1].axis;
+    return { x0: X.min, x1: X.max, y0: Y.min, y1: Y.max };
+  }
+
+  // o = { regions: [{bounds, n, h, yes, id?, next?}], lines: [{bounds, axis:'x'|'y', t, latest?}] }
+  function drawPlot(svg, o) {
+    var X = DS.features[0], Y = DS.features[1];
+    var xa = X.axis, ya = Y.axis;
+    var pw = PV.W - PV.l - PV.r, ph = PV.H - PV.t - PV.b;
+    function px(v) { return PV.l + (v - xa.min) / (xa.max - xa.min) * pw; }
+    function py(v) { return PV.H - PV.b - (v - ya.min) / (ya.max - ya.min) * ph; }
+    function box(b) { return { x: px(b.x0), y: py(b.y1), w: px(b.x1) - px(b.x0), h: py(b.y0) - py(b.y1) }; }
+    function rect(cls, q, extra) {
+      return '<rect class="' + cls + '"' + (extra || '') + ' x="' + q.x.toFixed(1) + '" y="' + q.y.toFixed(1) + '" width="' + q.w.toFixed(1) + '" height="' + q.h.toFixed(1) + '"/>';
+    }
+    var s = rect('plot-frame', { x: PV.l, y: PV.t, w: pw, h: ph });
+
+    o.regions.forEach(function (r) {
+      var cls = 'reg' + (r.h === 0 ? (r.yes ? ' pure-a' : ' pure-b') : '') + (r.id ? ' clickable' : '');
+      s += rect(cls, box(r.bounds), r.id ? ' data-id="' + r.id + '"' : '');
+    });
+
+    xa.ticks.forEach(function (t) {
+      s += '<line class="plot-grid" x1="' + px(t).toFixed(1) + '" x2="' + px(t).toFixed(1) + '" y1="' + PV.t + '" y2="' + (PV.H - PV.b) + '"/>' +
+        '<text class="axis-label" text-anchor="middle" x="' + px(t).toFixed(1) + '" y="' + (PV.H - PV.b + 13) + '">' + t + '</text>';
+    });
+    ya.ticks.forEach(function (t) {
+      s += '<line class="plot-grid" x1="' + PV.l + '" x2="' + (PV.W - PV.r) + '" y1="' + py(t).toFixed(1) + '" y2="' + py(t).toFixed(1) + '"/>' +
+        '<text class="axis-label" text-anchor="end" x="' + (PV.l - 6) + '" y="' + (py(t) + 3).toFixed(1) + '">' + t + '</text>';
+    });
+    s += '<text class="axis-label" text-anchor="middle" x="' + (PV.l + pw / 2) + '" y="' + (PV.H - 6) + '">' + X.head + ' (' + X.unit + ')</text>' +
+      '<text class="axis-label" text-anchor="middle" transform="rotate(-90)" x="' + (-(PV.t + ph / 2)) + '" y="11">' + Y.head + ' (' + Y.unit + ')</text>';
+
+    o.lines.forEach(function (l) {
+      var b = l.bounds, cls = 'cut' + (l.latest ? ' latest' : '');
+      if (l.axis === 'x') s += '<line class="' + cls + '" x1="' + px(l.t).toFixed(1) + '" x2="' + px(l.t).toFixed(1) + '" y1="' + py(b.y1).toFixed(1) + '" y2="' + py(b.y0).toFixed(1) + '"/>';
+      else s += '<line class="' + cls + '" x1="' + px(b.x0).toFixed(1) + '" x2="' + px(b.x1).toFixed(1) + '" y1="' + py(l.t).toFixed(1) + '" y2="' + py(l.t).toFixed(1) + '"/>';
+    });
+
+    DATA.forEach(function (row) {
+      var cx = px(row[X.key]).toFixed(1), cy = py(row[Y.key]).toFixed(1);
+      if (row[TARGET] === 'Yes') s += '<circle class="pt marker-a" r="5" cx="' + cx + '" cy="' + cy + '"/>';
+      else s += '<path class="pt marker-b" transform="translate(' + cx + ',' + cy + ')" d="' + STAR_D + '"/>';
+    });
+
+    o.regions.forEach(function (r) {
+      var q = box(r.bounds);
+      if (q.w >= 60 && q.h >= 22) s += '<text class="reg-label" x="' + (q.x + 4).toFixed(1) + '" y="' + (q.y + 11).toFixed(1) + '">n=' + r.n + ' · H=' + r.h.toFixed(2) + '</text>';
+      if (r.next) s += rect('reg-next', box(r.bounds));
+    });
+    s += rect('reg-focus', { x: 0, y: 0, w: 0, h: 0 }, ' display="none"');
+    s += rect('frame-out', { x: PV.l, y: PV.t, w: pw, h: ph });
+    svg.innerHTML = s;
+    svg.setAttribute('viewBox', '0 0 ' + PV.W + ' ' + PV.H);
+    return { box: box };
+  }
+
+  var partSvg = document.getElementById('partitionSvg');
+  var partMap = null, focusId = null, lastSplitId = null, stepH = [];
+
+  function frontierNodes() {
+    return Object.keys(treeNodes).map(function (id) { return treeNodes[id]; }).filter(function (n) { return !n.children.length; });
+  }
+
+  // Outline on the plot for the tree node the user clicked (its whole region, even if since split).
+  function setPartitionFocus() {
+    var el = partSvg.querySelector('.reg-focus');
+    if (!el || !partMap) return;
+    if (!focusId || !treeNodes[focusId] || !treeNodes[focusId].bounds) { el.setAttribute('display', 'none'); return; }
+    var q = partMap.box(treeNodes[focusId].bounds);
+    el.setAttribute('x', q.x); el.setAttribute('y', q.y); el.setAttribute('width', q.w); el.setAttribute('height', q.h);
+    el.removeAttribute('display');
+  }
+
+  function drawPartition() {
+    var wrap = document.getElementById('partition');
+    wrap.hidden = !DS.plot2d;
+    if (!DS.plot2d) return;
+    var N = DATA.length;
+    var frontier = frontierNodes();
+    var regions = frontier.map(function (n) {
+      return { id: n.id, bounds: n.bounds, n: n.rows.length, h: n.entropy, yes: n.yes, next: queue[0] === n.id };
+    });
+    var lines = Object.keys(treeNodes).map(function (id) { return treeNodes[id]; })
+      .filter(function (n) { return n.splitAxis; })
+      .map(function (n) { return { bounds: n.bounds, axis: n.splitAxis, t: n.splitThreshold, latest: n.id === lastSplitId }; });
+    partMap = drawPlot(partSvg, { regions: regions, lines: lines });
+    setPartitionFocus();
+
+    var cur = frontier.reduce(function (sum, n) { return sum + n.rows.length / N * n.entropy; }, 0);
+    stepH.length = stepIndex + 1;
+    stepH[stepIndex] = cur;
+    document.getElementById('entNow').textContent = cur.toFixed(3);
+    document.getElementById('entSub').textContent = stepIndex === 0
+      ? 'Start: one region holding all ' + N + ' ' + NOUN + '. Every split should push this number down.'
+      : Math.round((1 - cur / stepH[0]) * 100) + '% of the starting impurity removed' + (cur === 0 ? ' — every region is pure.' : '.');
+    document.getElementById('entHistory').innerHTML = stepH.map(function (v, i) {
+      var pct = stepH[0] > 0 ? v / stepH[0] * 100 : 0;
+      return '<div class="lb-row' + (i === stepIndex ? ' active' : '') + '"><div class="lb-name">' + (i === 0 ? 'Start' : 'After step ' + i) + '</div>' +
+        '<div class="lb-track"><div class="lb-fill" style="width:' + pct.toFixed(1) + '%"></div></div><div class="lb-val">' + v.toFixed(3) + '</div></div>';
+    }).join('');
+  }
+
+  partSvg.addEventListener('click', function (e) {
+    var rectEl = e.target.closest ? e.target.closest('.reg.clickable') : null;
+    if (!rectEl) return;
+    if (whyAnchor === rectEl && !whyCard.hidden) { hideWhy(); } else { showWhy(treeNodes[rectEl.getAttribute('data-id')], rectEl); }
+  });
+
+  var datasetSwitch = document.getElementById('datasetSwitch');
+  var picker = document.getElementById('featurePicker');
+  var leaderboard = document.getElementById('leaderboard');
+  var groupCards = document.getElementById('groupCards');
+  var weightedVal = document.getElementById('weightedVal');
+  var weightedFormula = document.getElementById('weightedFormula');
+  var gainVal = document.getElementById('gainVal');
+  var gainFormula = document.getElementById('gainFormula');
+  var scanBlock = document.getElementById('scanBlock');
+  var scanTitle = document.getElementById('scanTitle');
+  var scanRows = document.getElementById('scanRows');
+  var scanWhy = document.getElementById('scanWhy');
+  var scanPlot = document.getElementById('scanPlot');
+
+  Object.keys(DATASETS).forEach(function (id) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.ds = id;
+    btn.textContent = DATASETS[id].tab + ' · ' + DATASETS[id].name;
+    btn.addEventListener('click', function () { if (DATASETS[id] !== DS) setDataset(id); });
+    datasetSwitch.appendChild(btn);
+  });
+
+  // Raw-data table. Numeric column headers are buttons: click to sort ascending, again for descending, again to restore the original order.
+  var sortKey = null, sortDir = 0, selectedFeature = null;
+
+  function markColumn(f) {
+    Array.prototype.forEach.call(document.querySelectorAll('.data-table [data-feature]'), function (cell) {
+      cell.classList.toggle('hl', cell.dataset.feature === f);
+    });
+  }
+
+  function buildDataTable() {
+    var head = '<th>' + DS.idHeader + '</th>';
+    DS.features.forEach(function (f) {
+      var label = f.head + (f.unit ? ' (' + f.unit + ')' : '');
+      if (f.numeric) {
+        var on = sortKey === f.key && sortDir !== 0;
+        var arrow = !on ? '↕' : sortDir === 1 ? '▲' : '▼';
+        head += '<th data-feature="' + f.key + '" aria-sort="' + (!on ? 'none' : sortDir === 1 ? 'ascending' : 'descending') + '">' +
+          '<button type="button" class="th-sort' + (on ? ' on' : '') + '" data-sort="' + f.key + '" title="Click to sort">' + label + ' <span class="arrow" aria-hidden="true">' + arrow + '</span></button></th>';
+      } else {
+        head += '<th data-feature="' + f.key + '">' + label + '</th>';
+      }
+    });
+    document.getElementById('dataHeadRow').innerHTML = head + '<th>' + DS.targetName + '</th>';
+
+    var order = DATA.map(function (_, i) { return i; });
+    if (sortKey && sortDir !== 0) {
+      order.sort(function (x, y) { return (DATA[x][sortKey] - DATA[y][sortKey]) * sortDir || x - y; });
+    }
+
+    var tbody = document.getElementById('dataTableBody');
+    tbody.innerHTML = '';
+    order.forEach(function (i) {
+      var row = DATA[i];
+      var tr = document.createElement('tr');
+      var cells = '<td>' + (i + 1) + '</td>';
+      DS.features.forEach(function (f) { cells += '<td data-feature="' + f.key + '">' + row[f.key] + '</td>'; });
+      cells += '<td><span class="play-pill ' + (row[TARGET] === 'Yes' ? 'yes' : 'no') + '">' + row[TARGET] + '</span></td>';
+      tr.innerHTML = cells;
+      tbody.appendChild(tr);
+    });
+    markColumn(selectedFeature);
+  }
+
+  document.getElementById('dataHeadRow').addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.th-sort') : null;
+    if (!btn) return;
+    var key = btn.dataset.sort;
+    if (sortKey !== key) { sortKey = key; sortDir = 1; }
+    else if (sortDir === 1) { sortDir = -1; }
+    else { sortKey = null; sortDir = 0; }
+    buildDataTable();
+    var again = document.querySelector('.th-sort[data-sort="' + key + '"]');
+    if (again) again.focus();
+  });
+
+  function selectFeature(f) {
+    Array.prototype.forEach.call(picker.children, function (b) {
+      b.classList.toggle('active', b.dataset.feature === f);
+    });
+    Object.keys(lbRows).forEach(function (k) {
+      lbRows[k].classList.toggle('active', k === f);
+    });
+    selectedFeature = f;
+    markColumn(f);
+
+    var split = allSplits[f];
+    groupCards.innerHTML = '';
+    split.groups.forEach(function (g) {
+      var card = document.createElement('div');
+      card.className = 'group-card';
+      var dots = '';
+      for (var i = 0; i < g.yes; i++) dots += '<i class="a"></i>';
+      for (var j = 0; j < g.no; j++) dots += '<i></i>';
+      card.innerHTML =
+        '<div class="gc-head"><span class="gc-name">' + (g.name || g.value) + '</span><span class="gc-n">n=' + g.rows.length + '</span></div>' +
+        '<div class="dot-cluster">' + dots + '</div>' +
+        '<div class="gc-h">H = <b>' + g.entropy.toFixed(3) + '</b> bits</div>';
+      groupCards.appendChild(card);
+    });
+
+    if (split.kind === 'num') {
+      scanBlock.hidden = false;
+      scanPlot.style.display = DS.plot2d ? '' : 'none';
+      if (DS.plot2d) {
+        var full = fullBounds(), axisKey = f === DS.features[0].key ? 'x' : 'y';
+        var lb = copyBounds(full), rb = copyBounds(full);
+        lb[axisKey + '1'] = split.threshold; rb[axisKey + '0'] = split.threshold;
+        var g0 = split.groups[0], g1 = split.groups[1];
+        drawPlot(scanPlot, {
+          regions: [{ bounds: lb, n: g0.rows.length, h: g0.entropy, yes: g0.yes }, { bounds: rb, n: g1.rows.length, h: g1.entropy, yes: g1.yes }],
+          lines: [{ bounds: full, axis: axisKey, t: split.threshold, latest: true }]
+        });
+      }
+      scanTitle.innerHTML = 'Cuts tried on <b>' + FEATURE_LABELS[f] + '</b> (only where the class flips). Best cut: <b>≤ ' + fmtNum(split.threshold) + '</b>';
+      var side = function (v, cls) { return '<b>' + fmtNum(v) + '</b> (' + (cls === 'Yes/No' ? 'mixed' : cls) + ')'; };
+      scanWhy.innerHTML = 'Why <b>' + fmtNum(split.threshold) + '</b>? The nearest ' + FEATURE_LABELS[f].toLowerCase() + ' values either side of this cut are ' +
+        side(split.lo, split.loClass) + ' and ' + side(split.hi, split.hiClass) + '. Nothing sits between them, so any value from ' + fmtNum(split.lo) + ' to ' + fmtNum(split.hi) +
+        ' makes the same split — we label it with the midpoint: <b>' + midpointText(split) + '</b>.';
+      scanRows.innerHTML = split.thresholds.map(function (c) {
+        var pct = Math.max(c.gain / rootH * 100, 0);
+        return '<div class="lb-row scan-row' + (c.threshold === split.threshold ? ' active' : '') + '">' +
+          '<div class="lb-name">≤ ' + fmtNum(c.threshold) + ' <span class="nb">' + fmtNum(c.lo) + '|' + fmtNum(c.hi) + '</span></div>' +
+          '<div class="lb-track"><div class="lb-fill" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+          '<div class="lb-val">' + c.gain.toFixed(3) + '</div></div>';
+      }).join('');
+    } else {
+      scanBlock.hidden = true;
+    }
+
+    weightedVal.textContent = split.weightedH.toFixed(3);
+    weightedFormula.textContent = split.groups.map(function (g) {
+      return '(' + g.rows.length + '/' + DATA.length + ')·' + g.entropy.toFixed(3);
+    }).join(' + ') + ' = ' + split.weightedH.toFixed(3);
+
+    gainVal.textContent = split.gain.toFixed(3);
+    gainFormula.textContent = rootH.toFixed(3) + ' − ' + split.weightedH.toFixed(3) + ' = ' + split.gain.toFixed(3) +
+      (split.gain === maxGain ? '  — best split' : '');
+  }
+
+  // ---------- Section 3: step-through tree builder ----------
+  function countTotalSplits() {
+    var count = 0;
+    function rec(rows, used) {
+      if (rows.length === 0 || entropyOfRows(rows) === 0) return;
+      var candidates = candidateSplits(rows, used);
+      if (!candidates.length) return;
+      count++;
+      var best = pickBest(candidates);
+      best.groups.forEach(function (g) { rec(g.rows, used.concat([best.feature])); });
+    }
+    rec(DATA, []);
+    return count;
+  }
+  var TOTAL_STEPS = 0;
+
+  var treeNodes, rootId, queue, stepIndex, nodeSeq;
+
+  function edgeText(e) {
+    return e.numeric ? FEATURE_LABELS[e.feature] + ' ' + e.value : FEATURE_LABELS[e.feature] + ' = ' + e.value;
+  }
+
+  function makeNode(rows, usedFeatures, parentId, edgeLabel, bounds) {
+    nodeSeq++;
+    var id = 'n' + nodeSeq;
+    var ent = entropyOfRows(rows);
+    var yes = rows.filter(function (r) { return r[TARGET] === 'Yes'; }).length;
+    var no = rows.length - yes;
+    var majority = yes >= no ? 'Yes' : 'No';
+    var node = {
+      id: id, rows: rows, usedFeatures: usedFeatures, parentId: parentId, edgeLabel: edgeLabel,
+      entropy: ent, yes: yes, no: no, majority: majority, candidates: [],
+      isLeaf: false, leafReason: null, leafClass: null, splitFeature: null, splitTitle: null, children: [],
+      bounds: bounds || null, splitAxis: null, splitThreshold: null
+    };
+    if (rows.length === 0) {
+      node.isLeaf = true; node.leafReason = 'empty';
+    } else if (ent === 0) {
+      node.isLeaf = true; node.leafReason = 'pure'; node.leafClass = majority;
+    } else {
+      node.candidates = candidateSplits(rows, usedFeatures);
+      if (!node.candidates.length) { node.isLeaf = true; node.leafReason = 'no-features'; node.leafClass = majority; }
+    }
+    treeNodes[id] = node;
+    return node;
+  }
+
+  function initTree() {
+    treeNodes = {}; queue = []; stepIndex = 0; nodeSeq = 0;
+    focusId = null; lastSplitId = null; stepH = [];
+    var root = makeNode(DATA, [], null, null, DS.plot2d ? fullBounds() : null);
+    rootId = root.id;
+    if (!root.isLeaf) queue.push(root.id);
+    document.getElementById('stepLog').innerHTML = '';
+    renderTree();
+    updateControls();
+  }
+
+  function buildNextSplit() {
+    if (!queue.length) return;
+    var id = queue.shift();
+    var node = treeNodes[id];
+    var candidates = node.candidates;
+    var best = pickBest(candidates);
+    node.splitFeature = best.feature;
+    node.splitTitle = best.title;
+    lastSplitId = null;
+    if (DS.plot2d && best.kind === 'num') {
+      node.splitAxis = best.feature === DS.features[0].key ? 'x' : 'y';
+      node.splitThreshold = best.threshold;
+      lastSplitId = node.id;
+    }
+
+    var newLeaves = [];
+    best.groups.forEach(function (g, gi) {
+      var usedNext = node.usedFeatures.concat([best.feature]);
+      var cb = null;
+      if (node.splitAxis) { cb = copyBounds(node.bounds); cb[node.splitAxis + (gi === 0 ? '1' : '0')] = best.threshold; }
+      var child = makeNode(g.rows, usedNext, node.id, { feature: best.feature, value: g.value, numeric: best.kind === 'num' }, cb);
+      if (child.rows.length === 0) { child.leafClass = node.majority; }
+      node.children.push(child.id);
+      if (!child.isLeaf) { queue.push(child.id); }
+      else { newLeaves.push({ value: g.value, leafClass: child.leafClass, reason: child.leafReason }); }
+    });
+
+    logStep(node, best, candidates, newLeaves);
+    renderTree();
+    updateControls();
+  }
+
+  function logStep(node, best, candidates, newLeaves) {
+    stepIndex++;
+    var pathLabel = node.edgeLabel ? edgeText(node.edgeLabel) : 'Root — all ' + DATA.length + ' ' + NOUN;
+    var sorted = candidates.slice().sort(function (a, b) { return b.gain - a.gain; });
+
+    var wrap = document.createElement('div');
+    wrap.className = 'step-entry';
+
+    var head = document.createElement('div');
+    head.className = 'step-head';
+    head.innerHTML = '<span class="step-num">Step ' + stepIndex + '</span><span class="step-node">' + pathLabel + '</span><span class="step-meta">n=' + node.rows.length + ' · H=' + node.entropy.toFixed(3) + '</span>';
+    wrap.appendChild(head);
+
+    var table = document.createElement('div');
+    table.className = 'step-table';
+    sorted.forEach(function (c) {
+      var row = document.createElement('div');
+      row.className = 'step-row' + (c === best ? ' winner' : '');
+      var pct = (c.gain / node.entropy) * 100;
+      row.innerHTML =
+        '<div class="sr-name">' + c.title + '</div>' +
+        '<div class="sr-track"><div class="sr-fill" style="width:' + Math.max(pct, 0).toFixed(1) + '%"></div></div>' +
+        '<div class="sr-val">' + c.gain.toFixed(3) + '</div>';
+      table.appendChild(row);
+    });
+    wrap.appendChild(table);
+
+    var result = document.createElement('div');
+    result.className = 'step-result';
+    var branchNames = best.groups.map(function (g) { return g.value; }).join(', ');
+    var text = '→ Split by <b>' + best.title + '</b> (IG ' + best.gain.toFixed(3) + ')' +
+      (best.kind === 'num' ? ', a cut halfway between ' + fmtNum(best.lo) + ' and ' + fmtNum(best.hi) + ',' : '') +
+      ' into ' + best.groups.length + ' branches: ' + branchNames + '.';
+    if (newLeaves.length) {
+      text += ' ' + newLeaves.map(function (l) {
+        var reason = l.reason === 'pure' ? 'already pure' : l.reason === 'no-features' ? (best.kind === 'num' ? 'no cut left to try, majority vote' : 'out of questions, majority vote') : 'no examples';
+        return l.value + ' (' + reason + ') becomes a leaf: ' + DS.targetName + ' = ' + l.leafClass + '.';
+      }).join(' ');
+    }
+    result.innerHTML = text;
+    wrap.appendChild(result);
+
+    document.getElementById('stepLog').appendChild(wrap);
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    wrap.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  // Switch the dataset behind Sections 2 and 3 and rebuild both.
+  function setDataset(id) {
+    DS = DATASETS[id];
+    DATA = DS.rows; TARGET = DS.target; NOUN = DS.noun;
+    FEATURES = DS.features.map(function (f) { return f.key; });
+    FEATURE_LABELS = {}; VALUE_ORDER = {}; IS_NUM = {};
+    DS.features.forEach(function (f) {
+      FEATURE_LABELS[f.key] = f.label; IS_NUM[f.key] = !!f.numeric;
+      if (f.values) VALUE_ORDER[f.key] = f.values;
+    });
+
+    Array.prototype.forEach.call(datasetSwitch.children, function (b) {
+      var on = b.dataset.ds === id;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    document.getElementById('dsCaption').textContent = DS.caption;
+    document.getElementById('intro2').innerHTML = DS.intro2;
+    document.getElementById('intro3').innerHTML = DS.intro3;
+    document.getElementById('numNote').hidden = !DS.features.some(function (f) { return f.numeric; });
+    document.getElementById('dataSummary').textContent = 'View the raw dataset (' + DATA.length + ' ' + NOUN + ')';
+
+    rootH = entropyOfRows(DATA);
+    var yesTotal = DATA.filter(function (r) { return r[TARGET] === 'Yes'; }).length;
+    document.getElementById('rootChip').innerHTML = 'Root entropy H(S) = <strong>' + rootH.toFixed(3) + '</strong> bits <span style="color:var(--muted)">(' +
+      yesTotal + ' Yes / ' + (DATA.length - yesTotal) + ' No, ' + DATA.length + ' ' + NOUN + ')</span>';
+    sortKey = null; sortDir = 0; selectedFeature = null;
+    buildDataTable();
+
+    allSplits = {};
+    FEATURES.forEach(function (f) { allSplits[f] = computeSplit(DATA, f); });
+    maxGain = Math.max.apply(null, FEATURES.map(function (f) { return allSplits[f].gain; }));
+
+    picker.innerHTML = '';
+    FEATURES.forEach(function (f) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.feature = f;
+      btn.innerHTML = FEATURE_LABELS[f] + ' <span class="ig-badge">IG ' + allSplits[f].gain.toFixed(3) + '</span>';
+      btn.addEventListener('click', function () { selectFeature(f); });
+      picker.appendChild(btn);
+    });
+
+    leaderboard.innerHTML = '';
+    lbRows = {};
+    var lbOrder = FEATURES.slice().sort(function (a, b) { return allSplits[b].gain - allSplits[a].gain; });
+    lbOrder.forEach(function (f) {
+      var row = document.createElement('div');
+      row.className = 'lb-row';
+      row.dataset.feature = f;
+      var pct = (allSplits[f].gain / rootH) * 100;
+      row.innerHTML =
+        '<div class="lb-name">' + allSplits[f].title + '</div>' +
+        '<div class="lb-track"><div class="lb-fill" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+        '<div class="lb-val">' + allSplits[f].gain.toFixed(3) + '</div>';
+      leaderboard.appendChild(row);
+      lbRows[f] = row;
+    });
+
+    selectFeature(lbOrder[0]);
+
+    TOTAL_STEPS = countTotalSplits();
+    initTree();
+  }
+
+  var whyCard = document.createElement('div');
+  whyCard.className = 'why-card';
+  whyCard.id = 'whyCard';
+  whyCard.setAttribute('role', 'tooltip');
+  whyCard.hidden = true;
+  document.body.appendChild(whyCard);
+
+  var whyAnchor = null;
+
+  function hideWhy() {
+    whyCard.hidden = true;
+    if (whyAnchor) { whyAnchor.removeAttribute('aria-describedby'); whyAnchor = null; }
+    if (focusId) { focusId = null; setPartitionFocus(); }
+  }
+
+  document.addEventListener('click', function (e) {
+    if (whyCard.hidden) return;
+    if (whyCard.contains(e.target) || (e.target.closest && e.target.closest('.node-box, #partitionSvg .reg.clickable'))) return;
+    hideWhy();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') hideWhy();
+  });
+
+  function pathOf(node) {
+    var parts = [];
+    var cur = node;
+    while (cur && cur.edgeLabel) {
+      parts.unshift(edgeText(cur.edgeLabel));
+      cur = treeNodes[cur.parentId];
+    }
+    return parts.length ? parts.join(' → ') : 'Root — all ' + DATA.length + ' ' + NOUN;
+  }
+
+  function entropyCalc(node) {
+    var n = node.rows.length, y = node.yes, no = node.no;
+    if (n === 0) return 'H = 0 (nothing to measure)';
+    if (y === 0 || no === 0) {
+      return 'H = −(' + n + '/' + n + ')·log₂(' + n + '/' + n + ') = 0.000';
+    }
+    return 'H = −(' + y + '/' + n + ')·log₂(' + y + '/' + n + ') − (' + no + '/' + n + ')·log₂(' + no + '/' + n + ') = ' + node.entropy.toFixed(3);
+  }
+
+  function whyHtml(node) {
+    var total = node.rows.length;
+    var head = function (title) {
+      return '<div class="why-head"><b>' + title + '</b><span>' + pathOf(node) + ' · n=' + total + ' (' + node.yes + ' Yes / ' + node.no + ' No)</span></div>';
+    };
+    var html;
+
+    if (node.splitFeature) {
+      var sorted = node.candidates.slice().sort(function (a, b) { return b.gain - a.gain; });
+      html = head('Why “' + node.splitTitle + '?”');
+      html += '<div class="why-calc">' + entropyCalc(node) + '</div>';
+      sorted.forEach(function (c) {
+        var terms = c.groups.filter(function (g) { return g.rows.length; }).map(function (g) {
+          return '(' + g.rows.length + '/' + total + ')·' + g.entropy.toFixed(3);
+        }).join(' + ');
+        var win = c.feature === node.splitFeature && c.title === node.splitTitle;
+        html += '<div class="why-cand' + (win ? ' winner' : '') + '">' +
+          '<div class="why-cand-top"><span>' + c.title + (win ? ' ✓' : '') + '</span><span class="ig">IG ' + c.gain.toFixed(3) + '</span></div>' +
+          (c.kind === 'num' ? '<div class="why-calc">cut = halfway between ' + fmtNum(c.lo) + ' (' + c.loClass + ') and ' + fmtNum(c.hi) + ' (' + c.hiClass + '): ' + midpointText(c) + '</div>' : '') +
+          '<div class="why-calc">weighted H = ' + terms + ' = ' + c.weightedH.toFixed(3) + '</div>' +
+          '<div class="why-calc">IG = ' + node.entropy.toFixed(3) + ' − ' + c.weightedH.toFixed(3) + ' = ' + c.gain.toFixed(3) + '</div>' +
+          '</div>';
+      });
+      html += '<div class="why-foot">Highest gain wins → <b>' + node.splitTitle + '</b> becomes this node’s question.</div>';
+    } else if (node.isLeaf) {
+      html = head('Why is this a leaf?');
+      if (node.leafReason === 'pure') {
+        html += '<div class="why-calc">' + entropyCalc(node) + '</div>' +
+          '<div class="why-foot">Every one of the ' + total + ' ' + NOUN + ' here is <b>' + node.leafClass + '</b>. Entropy is 0, so there’s nothing left to separate — no more questions needed. Prediction: <b>Play = ' + node.leafClass + '</b>.</div>';
+      } else if (node.leafReason === 'no-features') {
+        html += '<div class="why-calc">' + entropyCalc(node) + '</div>' +
+          '<div class="why-foot">Still mixed, but ' + (FEATURES.some(function (f) { return IS_NUM[f]; }) ? 'no cut can separate these ' + NOUN + ' any further' : 'every question has already been asked on this path') + '. The tree falls back to a majority vote: <b>' + node.leafClass + '</b> (' + Math.max(node.yes, node.no) + ' of ' + total + ').</div>';
+      } else {
+        html += '<div class="why-foot">No ' + NOUN + ' landed in this branch, so it inherits the parent’s majority class: <b>' + node.leafClass + '</b>.</div>';
+      }
+    } else {
+      html = head('Why hasn’t this split yet?');
+      html += '<div class="why-calc">' + entropyCalc(node) + '</div>' +
+        '<div class="why-foot">Entropy is above 0, so this group is still mixed and needs another question. It’s waiting in the queue — click <b>Build next split</b> to process it.</div>';
+    }
+    return html;
+  }
+
+  function showWhy(node, anchor) {
+    whyCard.innerHTML = whyHtml(node);
+    whyCard.hidden = false;
+    focusId = node.id;
+    setPartitionFocus();
+
+    var r = anchor.getBoundingClientRect();
+    var w = whyCard.offsetWidth, hgt = whyCard.offsetHeight;
+    var left = Math.min(Math.max(r.left + r.width / 2 - w / 2, 8), window.innerWidth - w - 8);
+    var top = r.bottom + 10;
+    if (top + hgt > window.innerHeight - 8) top = r.top - hgt - 10;
+    if (top < 8) top = 8;
+    whyCard.style.left = left + 'px';
+    whyCard.style.top = top + 'px';
+    if (whyAnchor && whyAnchor !== anchor) whyAnchor.removeAttribute('aria-describedby');
+    whyAnchor = anchor;
+    anchor.setAttribute('aria-describedby', 'whyCard');
+  }
+  window.addEventListener('scroll', hideWhy, true);
+
+  function renderTree() {
+    hideWhy();
+    drawPartition();
+    var root = document.getElementById('treeRoot');
+    root.innerHTML = '';
+    root.appendChild(renderNodeBlock(rootId));
+    requestAnimationFrame(drawConnectors);
+  }
+
+  function renderNodeBlock(id) {
+    var node = treeNodes[id];
+    var block = document.createElement('div');
+    block.className = 'tree-node-block';
+    block.dataset.id = id;
+
+    var box = document.createElement('div');
+    if (node.isLeaf) {
+      box.className = 'node-box ' + (node.leafClass === 'Yes' ? 'leaf-yes' : 'leaf-no');
+      var reasonText = node.leafReason === 'no-features' ? 'majority vote' : node.leafReason === 'empty' ? 'no examples' : 'pure';
+      box.innerHTML = '<div class="node-title">' + DS.targetName + ': ' + (node.leafClass || '—') + '</div><div class="node-meta">n=' + node.rows.length + ' · ' + reasonText + '</div>';
+    } else if (node.splitFeature) {
+      box.className = 'node-box split';
+      box.innerHTML = '<div class="node-title">' + node.splitTitle + '?</div><div class="node-meta">n=' + node.rows.length + ' · H=' + node.entropy.toFixed(3) + '</div>';
+    } else {
+      box.className = 'node-box pending';
+      box.innerHTML = '<div class="node-title">' + node.yes + 'Y / ' + node.no + 'N</div><div class="node-meta">n=' + node.rows.length + ' · H=' + node.entropy.toFixed(3) + '</div>';
+    }
+    box.tabIndex = 0;
+    box.setAttribute('role', 'button');
+    box.setAttribute('aria-haspopup', 'true');
+    box.addEventListener('click', function () {
+      if (whyAnchor === box && !whyCard.hidden) { hideWhy(); } else { showWhy(node, box); }
+    });
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); box.click(); }
+    });
+    block.appendChild(box);
+
+    if (node.children.length) {
+      var row = document.createElement('div');
+      row.className = 'children-row';
+      node.children.forEach(function (cid) { row.appendChild(renderNodeBlock(cid)); });
+      block.appendChild(row);
+    }
+    return block;
+  }
+
+  function drawConnectors() {
+    var wrapEl = document.getElementById('treeWrap');
+    var svg = document.getElementById('treeLines');
+    var rootEl = document.getElementById('treeRoot');
+    Array.prototype.forEach.call(wrapEl.querySelectorAll('.edge-label'), function (el) { el.remove(); });
+
+    var w = rootEl.scrollWidth + 8;
+    var hgt = rootEl.scrollHeight + 8;
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', hgt);
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + hgt);
+    svg.innerHTML = '';
+
+    var wrapRect = wrapEl.getBoundingClientRect();
+    function rel(rect) {
+      return { x: rect.left - wrapRect.left + wrapEl.scrollLeft, y: rect.top - wrapRect.top + wrapEl.scrollTop };
+    }
+
+    var blocks = wrapEl.querySelectorAll('.tree-node-block');
+    Array.prototype.forEach.call(blocks, function (block) {
+      var id = block.dataset.id;
+      var node = treeNodes[id];
+      var box = block.querySelector(':scope > .node-box');
+      if (!box || !node.children.length) return;
+      var boxRect = box.getBoundingClientRect();
+      var pBottom = rel(boxRect);
+      pBottom.x += boxRect.width / 2; pBottom.y += boxRect.height;
+
+      var row = block.querySelector(':scope > .children-row');
+      Array.prototype.forEach.call(row.children, function (childBlock) {
+        var childId = childBlock.dataset.id;
+        var childNode = treeNodes[childId];
+        var childBox = childBlock.querySelector(':scope > .node-box');
+        var cRect = childBox.getBoundingClientRect();
+        var cTop = rel(cRect);
+        cTop.x += cRect.width / 2;
+
+        var midY = (pBottom.y + cTop.y) / 2;
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M ' + pBottom.x + ' ' + pBottom.y + ' L ' + pBottom.x + ' ' + midY + ' L ' + cTop.x + ' ' + midY + ' L ' + cTop.x + ' ' + cTop.y);
+        path.setAttribute('class', 'connector-line');
+        svg.appendChild(path);
+
+        if (childNode.edgeLabel) {
+          var label = document.createElement('span');
+          label.className = 'edge-label';
+          label.textContent = childNode.edgeLabel.value;
+          label.style.left = cTop.x + 'px';
+          label.style.top = midY + 'px';
+          wrapEl.appendChild(label);
+        }
+      });
+    });
+  }
+
+  function updateControls() {
+    var btn = document.getElementById('buildStepBtn');
+    var status = document.getElementById('treeStatus');
+    if (queue.length === 0) {
+      btn.disabled = true;
+      var leafCount = Object.keys(treeNodes).filter(function (k) { return treeNodes[k].isLeaf; }).length;
+      status.textContent = stepIndex === 0 ? 'Click to begin' : '✓ Tree complete — ' + stepIndex + ' question' + (stepIndex === 1 ? '' : 's') + ', ' + leafCount + ' leaves';
+      status.className = 'tree-status' + (stepIndex > 0 ? ' complete' : '');
+    } else {
+      btn.disabled = false;
+      status.textContent = 'Step ' + stepIndex + ' of ' + TOTAL_STEPS;
+      status.className = 'tree-status';
+    }
+  }
+
+  document.getElementById('buildStepBtn').addEventListener('click', buildNextSplit);
+  document.getElementById('resetTreeBtn').addEventListener('click', initTree);
+  window.addEventListener('resize', function () { requestAnimationFrame(drawConnectors); });
+
+  setDataset('categorical');
+})();
+</script>
+</body>
+</html>
