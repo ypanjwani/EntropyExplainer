@@ -232,7 +232,7 @@
   .flow-connector::before, .flow-connector::after { content: ''; flex: 1; height: 1px; background: var(--grid); }
 
   @media (prefers-reduced-motion: reduce) {
-    .switch-thumb, .switch-track, .node-box, .split-readout.clickable { transition: none; }
+    .switch-thumb, .switch-track, .node-box, .split-readout.clickable, .tour-spot, .tour-card { transition: none; }
     html { scroll-behavior: auto; }
   }
 
@@ -496,6 +496,69 @@
 
   .naive-note { font-size: 13px; line-height: 1.55; color: var(--text-2); background: var(--inset); border-left: 3px solid var(--series-b); border-radius: 6px; padding: 10px 14px; margin: 0; }
   .naive-note b { color: var(--text-1); }
+
+  /* ---------- "Take a tour": bottom CTA + spotlight overlay ---------- */
+  .tour-cta { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 2px; }
+  .tour-btn {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 600;
+    color: #fff; background: var(--series-a); border: 1px solid var(--series-a);
+    border-radius: 999px; padding: 11px 22px; cursor: pointer;
+  }
+  .tour-btn:hover { filter: brightness(1.06); }
+  .tour-btn:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+  .tour-btn[disabled] { opacity: .6; cursor: default; }
+  .tour-cta-note { font-size: 11.5px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+  .tour-spot {
+    position: fixed; z-index: 200; pointer-events: none;
+    border-radius: 12px; border: 2px solid var(--series-a);
+    box-shadow: 0 0 0 9999px rgba(11,11,11,0.55);
+    transition: top .45s ease, left .45s ease, width .45s ease, height .45s ease, opacity .2s ease;
+  }
+  .tour-spot.hidden { opacity: 0; }
+
+  .tour-card {
+    position: fixed; z-index: 201; width: 340px; max-width: calc(100vw - 24px);
+    background: var(--surface-1); color: var(--text-1);
+    border: 1px solid var(--series-a); border-radius: 12px; padding: 14px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; gap: 10px;
+    transition: top .45s ease, left .45s ease;
+  }
+  .tour-card[hidden] { display: none; }
+  .tour-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tour-step-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--series-a); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tour-close { font: inherit; font-size: 16px; line-height: 1; color: var(--muted); background: none; border: none; cursor: pointer; padding: 2px 4px; }
+  .tour-close:hover { color: var(--text-1); }
+  .tour-close:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+  .tour-title { margin: 0; font-size: 15px; font-weight: 700; }
+  .tour-body { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.55; }
+  .tour-progress { display: flex; gap: 6px; }
+  .tour-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--grid); flex-shrink: 0; }
+  .tour-dot.done { background: var(--series-a); opacity: .5; }
+  .tour-dot.current { background: var(--series-a); }
+  .tour-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tour-controls button {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    border-radius: 8px; padding: 7px 12px; border: 1px solid var(--border); background: var(--inset); color: var(--text-2);
+  }
+  .tour-controls button:hover { color: var(--text-1); }
+  .tour-controls button.primary { background: var(--series-a); border-color: var(--series-a); color: #fff; }
+  .tour-controls button:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+
+  /* One-time coachmark pointing at "View the raw dataset" the first time Section 2 scrolls into view */
+  .hint-card {
+    position: fixed; z-index: 150; width: 210px;
+    background: var(--series-a); color: #fff; cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 600; line-height: 1.45;
+    border-radius: 10px; padding: 11px 14px;
+    box-shadow: 0 10px 26px rgba(11,11,11,0.22);
+  }
+  .hint-card[hidden] { display: none; }
+  .hint-card:focus-visible { outline: 2px solid var(--text-1); outline-offset: 2px; }
+  .hint-arrow { position: absolute; width: 12px; height: 12px; background: var(--series-a); transform: rotate(45deg); }
+  .hint-arrow.down { bottom: -6px; }
+  .hint-arrow.up { top: -6px; }
 </style>
 </head>
 <body>
@@ -553,7 +616,7 @@
       <p class="seq-readout" id="seqReadout"></p>
     </div>
 
-    <div class="callout" id="seqNote"><b>One nuance:</b> a real split never cuts the target column directly — it cuts on a <i>feature's</i> value (a category, or a numeric threshold like Income ≤ 47.5), and that's what puts same-feature rows next to each other in the first place. But once the rows are in that order, scanning every gap for the biggest Information Gain, exactly like above, is <i>literally</i> the algorithm — it's what <code>bestSplit</code> and <code>computeSplit</code> do in the sections below, just on a real x/y or Income/Credit axis instead of a row of dots.</div>
+    <div class="callout" id="seqNote"><b>One nuance — why only these 9 gaps, and not any grouping of the 10 dots?</b> A real split never cuts the target column directly — it cuts on a <i>feature's</i> value, and that's what puts same-class rows next to each other in the first place. For a <i>category</i> (Outlook = Sunny), the group is every row sharing that value, wherever it sits in the table. For a <i>number</i> (Income ≤ 47.5), you sort rows by that number first, and the split is forced to land at a boundary in that order — never an arbitrary pick of rows, which is exactly what the gaps above represent. That's not a simplification: for one sorted feature, the highest-Information-Gain split is provably always one of these boundary cuts. Picking arbitrary rows instead could hit IG = E instantly (put every ● in one bucket) — but "row 3 and row 7 are Class A" isn't a rule a new example could ever be tested against, it's just memorizing the answers. Scanning every boundary like this is <i>literally</i> what <code>bestSplit</code> and <code>computeSplit</code> do in the sections below, just on a real x/y or Income/Credit axis instead of a row of dots.</div>
   </section>
 
   <div class="flow-connector" role="presentation">now play with the shape of it</div>
@@ -706,6 +769,11 @@
     <div class="step-log" id="stepLog"></div>
   </section>
 
+  <div class="tour-cta">
+    <button type="button" id="tourBtn" class="tour-btn">▶ Take a tour</button>
+    <span class="tour-cta-note">~30 seconds · watches the whole lab explain itself, start to finish</span>
+  </div>
+
   <footer class="foot">Built with Shannon's entropy formula and Quinlan's Play Tennis dataset.</footer>
 
 </div>
@@ -726,7 +794,7 @@
     var N = 50;
     var examples = [
       { title: 'All one class', a: 50, note: 'Every pick is ● Class A. You never have to guess, so nothing ever surprises you. Entropy is <b>0</b>.' },
-      { title: 'Almost all one class', a: 49, note: 'You would nearly always guess ● and be right. A ★ is a surprise, but it is so rare that the <i>average</i> surprise is tiny.' },
+      { title: 'Almost all one class', a: 47, note: 'You would nearly always guess ● and be right. A ★ is a surprise, but it is rare enough that the <i>average</i> surprise stays small.' },
       { title: 'Half and half', a: 25, note: 'Every pick is a coin flip, so you are as surprised as you can be. This is the most mixed a two-class group can get: <b>1 bit</b>.' }
     ];
     var rand = mulberry32(5);
@@ -1946,7 +2014,7 @@
       html = head('Why is this a leaf?');
       if (node.leafReason === 'pure') {
         html += '<div class="why-calc">' + entropyCalc(node) + '</div>' +
-          '<div class="why-foot">Every one of the ' + total + ' ' + NOUN + ' here is <b>' + node.leafClass + '</b>. Entropy is 0, so there’s nothing left to separate — no more questions needed. Prediction: <b>Play = ' + node.leafClass + '</b>.</div>';
+          '<div class="why-foot">Every one of the ' + total + ' ' + NOUN + ' here is <b>' + node.leafClass + '</b>. Entropy is 0, so there’s nothing left to separate — no more questions needed. Prediction: <b>' + DS.targetName + ' = ' + node.leafClass + '</b>.</div>';
       } else if (node.leafReason === 'no-features') {
         html += '<div class="why-calc">' + entropyCalc(node) + '</div>' +
           '<div class="why-foot">Still mixed, but ' + (FEATURES.some(function (f) { return IS_NUM[f]; }) ? 'no cut can separate these ' + NOUN + ' any further' : 'every question has already been asked on this path') + '. The tree falls back to a majority vote: <b>' + node.leafClass + '</b> (' + Math.max(node.yes, node.no) + ' of ' + total + ').</div>';
@@ -2103,6 +2171,303 @@
   window.addEventListener('resize', function () { requestAnimationFrame(drawConnectors); });
 
   setDataset('categorical');
+
+  // ---------- "Take a tour": cinematic auto-play walkthrough of the whole lab.
+  // Lives inside the same closure as everything above so it can drive real state
+  // (slider, dataset picker, tree builder) through the exact same public click/input
+  // events a person would use, plus reuse hideWhy/setCalcOpen for a clean start. ----------
+  (function buildTour() {
+    function reduceMotion() { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+
+    var spot = document.createElement('div');
+    spot.className = 'tour-spot hidden';
+    document.body.appendChild(spot);
+
+    var card = document.createElement('div');
+    card.className = 'tour-card';
+    card.hidden = true;
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-label', 'Guided tour of Entropy Lab');
+    document.body.appendChild(card);
+
+    var tourBtn = document.getElementById('tourBtn');
+    var active = false, paused = false, stepTimer = null, stepIndex = 0;
+
+    // Each step spotlights one element and narrates it; `action`, if present, drives a short
+    // demo through real clicks/input events and must guard every delayed callback with
+    // isCurrent() so a step the user has already left (skipped, ended) can't fire late.
+    var steps = [
+      {
+        title: 'What is entropy?',
+        body: 'Entropy is a number for how mixed a group is. A pure group (all one class) scores 0. An even 50/50 mix scores the maximum a two-class group can reach: 1 bit.',
+        target: function () { return document.getElementById('entropyExamples'); },
+        duration: 4200
+      },
+      {
+        title: 'Why a logarithm?',
+        body: 'Each outcome’s own “surprise” is −log₂(p). Halving a probability always costs exactly 1 more bit — that additive ruler is why entropy is built on a log, not something like 1/p.',
+        target: function () { return document.getElementById('surpriseSvg').parentElement; },
+        duration: 4600
+      },
+      {
+        title: 'Split a plain sequence',
+        body: 'Any gap can be tried — the bars show the Information Gain each one would give. Watch the tallest bar win.',
+        target: function () { return document.getElementById('seqDemo'); },
+        duration: 4600,
+        action: function (isCurrent) {
+          var demo = document.getElementById('seqDemo');
+          var activeBtn = demo.querySelector('.seq-gap.active');
+          var originalGap = activeBtn ? activeBtn.getAttribute('data-gap') : null;
+          var tryGap = function (g) { var b = demo.querySelector('.seq-gap[data-gap="' + g + '"]'); if (b) b.click(); };
+          tryGap(3);
+          setTimeout(function () { if (isCurrent()) tryGap(7); }, 900);
+          setTimeout(function () { if (isCurrent() && originalGap) tryGap(originalGap); }, 1900);
+        }
+      },
+      {
+        title: 'p(Class A) and the entropy curve',
+        body: 'Drag this to change the class mix — entropy climbs to 1 bit at a 50/50 split and falls back to 0 at the pure edges.',
+        target: function () { return document.getElementById('pSlider').closest('.two-col'); },
+        duration: 4800,
+        action: function (isCurrent) {
+          [0.14, 0.5, 0.86, 0.64].forEach(function (v, i) {
+            setTimeout(function () {
+              if (!isCurrent()) return;
+              slider.value = v;
+              slider.dispatchEvent(new Event('input', { bubbles: true }));
+            }, i * 700);
+          });
+        }
+      },
+      {
+        title: 'View the raw dataset',
+        body: 'Every row this section’s splits are computed from is right here. Numeric columns are sortable — click a header to check the ordering a threshold cut relies on.',
+        target: function () { return document.getElementById('dataDetails'); },
+        duration: 4200,
+        action: function () {
+          var det = document.getElementById('dataDetails');
+          if (!det.open) det.open = true;
+        }
+      },
+      {
+        title: 'Pick a feature',
+        body: 'Click a feature to see how well it separates the classes — every feature gets scored with the same Information Gain math.',
+        target: function () { return document.getElementById('featurePicker'); },
+        duration: 4600,
+        action: function (isCurrent) {
+          var pk = document.getElementById('featurePicker');
+          var originalBtn = pk.querySelector('button.active');
+          var originalFeature = originalBtn ? originalBtn.dataset.feature : null;
+          var others = Array.prototype.filter.call(pk.children, function (b) { return b.dataset.feature !== originalFeature; });
+          if (others[0]) others[0].click();
+          setTimeout(function () { if (isCurrent() && others[1]) others[1].click(); }, 1100);
+          setTimeout(function () {
+            if (isCurrent() && originalFeature) { var b = pk.querySelector('[data-feature="' + originalFeature + '"]'); if (b) b.click(); }
+          }, 2200);
+        }
+      },
+      {
+        title: 'Weighted entropy & Information Gain',
+        body: 'Entropy before, minus the weighted entropy of the resulting groups, is the Information Gain — the number every split is trying to maximize.',
+        target: function () { return document.getElementById('summary'); },
+        duration: 4200
+      },
+      {
+        title: 'Build the full tree',
+        body: 'Each click asks whichever remaining question gives the biggest Information Gain, until every leaf is pure.',
+        target: function () { return document.getElementById('treeWrap'); },
+        duration: 5800,
+        action: function (isCurrent, target) {
+          document.getElementById('resetTreeBtn').click();
+          positionAt(target);
+          var btn = document.getElementById('buildStepBtn');
+          var clicks = 0, maxClicks = 6;
+          var tick = function () {
+            if (!isCurrent() || btn.disabled || clicks >= maxClicks) return;
+            btn.click(); clicks++;
+            positionAt(target);
+            setTimeout(tick, 750);
+          };
+          setTimeout(tick, 400);
+        }
+      }
+    ];
+
+    function positionAt(target) {
+      var r = target.getBoundingClientRect();
+      var pad = 10;
+      spot.style.top = (r.top - pad) + 'px';
+      spot.style.left = (r.left - pad) + 'px';
+      spot.style.width = (r.width + pad * 2) + 'px';
+      spot.style.height = (r.height + pad * 2) + 'px';
+      spot.classList.remove('hidden');
+
+      var cw = card.offsetWidth || 340, ch = card.offsetHeight || 170;
+      var top = r.bottom + pad + 10;
+      if (top + ch > window.innerHeight - 8) top = r.top - ch - 20;
+      if (top < 8) top = 8;
+      var left = Math.min(Math.max(r.left + r.width / 2 - cw / 2, 8), window.innerWidth - cw - 8);
+      card.style.top = top + 'px';
+      card.style.left = left + 'px';
+    }
+
+    function clearStepTimer() { if (stepTimer) { clearTimeout(stepTimer); stepTimer = null; } }
+    function scheduleAdvance(ms) { clearStepTimer(); stepTimer = setTimeout(function () { goToStep(stepIndex + 1); }, ms); }
+
+    function renderCard(i) {
+      var s = steps[i];
+      card.innerHTML =
+        '<div class="tour-head"><span class="tour-step-label">Step ' + (i + 1) + ' of ' + steps.length + '</span>' +
+        '<button type="button" class="tour-close" id="tourClose" aria-label="End tour">✕</button></div>' +
+        '<h4 class="tour-title">' + s.title + '</h4>' +
+        '<p class="tour-body">' + s.body + '</p>' +
+        '<div class="tour-progress">' + steps.map(function (_, k) {
+          return '<span class="tour-dot' + (k < i ? ' done' : k === i ? ' current' : '') + '"></span>';
+        }).join('') + '</div>' +
+        '<div class="tour-controls">' +
+        '<button type="button" id="tourPause">' + (paused ? '▶ Resume' : '⏸ Pause') + '</button>' +
+        '<button type="button" class="primary" id="tourSkip">End tour</button>' +
+        '</div>';
+      document.getElementById('tourClose').addEventListener('click', endTour);
+      document.getElementById('tourSkip').addEventListener('click', endTour);
+      document.getElementById('tourPause').addEventListener('click', togglePause);
+    }
+
+    function togglePause() {
+      paused = !paused;
+      if (paused) { clearStepTimer(); } else { scheduleAdvance(steps[stepIndex].duration); }
+      renderCard(stepIndex);
+      var t = steps[stepIndex].target();
+      if (t) positionAt(t);
+    }
+
+    function goToStep(i) {
+      clearStepTimer();
+      if (i >= steps.length) { endTour(); return; }
+      stepIndex = i;
+      var myToken = stepIndex;
+      var s = steps[i];
+      var target = s.target();
+      if (!target) { goToStep(i + 1); return; }
+      var rm = reduceMotion();
+      target.scrollIntoView({ behavior: rm ? 'auto' : 'smooth', block: 'center' });
+      card.hidden = false;
+      renderCard(i);
+      setTimeout(function () {
+        if (!active || stepIndex !== myToken) return;
+        // Action first, then position: a step that resizes its target (e.g. opening a
+        // <details>) needs the spotlight measured against the post-action size, not the
+        // pre-action one. Steps with no action, or ones that reposition themselves after
+        // later async changes (the tree-build step), are unaffected by this ordering.
+        if (s.action) s.action(function isCurrent() { return active && stepIndex === myToken; }, target);
+        positionAt(target);
+        if (!paused) scheduleAdvance(s.duration);
+      }, rm ? 50 : 480);
+    }
+
+    function onReposition() {
+      if (!active) return;
+      var t = steps[stepIndex] && steps[stepIndex].target();
+      if (t) positionAt(t);
+    }
+    function onKeydown(e) { if (e.key === 'Escape') endTour(); }
+
+    function startTour() {
+      if (active) return;
+      active = true; paused = false; stepIndex = -1;
+      hideWhy();
+      setCalcOpen(false, false);
+      window.addEventListener('scroll', onReposition, true);
+      window.addEventListener('resize', onReposition);
+      document.addEventListener('keydown', onKeydown);
+      goToStep(0);
+    }
+
+    function endTour() {
+      if (!active) return;
+      active = false; paused = false;
+      clearStepTimer();
+      spot.classList.add('hidden');
+      card.hidden = true;
+      window.removeEventListener('scroll', onReposition, true);
+      window.removeEventListener('resize', onReposition);
+      document.removeEventListener('keydown', onKeydown);
+      tourBtn.focus();
+    }
+
+    tourBtn.addEventListener('click', startTour);
+  })();
+
+  // ---------- One-time coachmark: nudge toward "View the raw dataset" the first time
+  // Section 2 scrolls into view. Shows once per page load, dismisses on any outside
+  // click, Esc, opening the details itself, or clicking the hint (which also opens it). ----------
+  (function buildDatasetHint() {
+    var dataDetails = document.getElementById('dataDetails');
+    var shown = false;
+
+    var hintCard = document.createElement('div');
+    hintCard.className = 'hint-card';
+    hintCard.hidden = true;
+    hintCard.setAttribute('role', 'button');
+    hintCard.tabIndex = 0;
+    hintCard.textContent = 'Click me for viewing full dataset';
+    var hintArrow = document.createElement('span');
+    hintArrow.className = 'hint-arrow';
+    hintCard.appendChild(hintArrow);
+    document.body.appendChild(hintCard);
+
+    function positionHint() {
+      var target = document.getElementById('dataSummary');
+      if (!target) return;
+      var r = target.getBoundingClientRect();
+      var w = hintCard.offsetWidth, h = hintCard.offsetHeight;
+      var left = Math.min(Math.max(r.left + r.width / 2 - w / 2, 8), window.innerWidth - w - 8);
+      var top = r.top - h - 14;
+      var below = top < 8;
+      if (below) top = r.bottom + 14;
+      hintCard.style.left = left + 'px';
+      hintCard.style.top = top + 'px';
+      hintArrow.className = 'hint-arrow ' + (below ? 'up' : 'down');
+      hintArrow.style.left = Math.min(Math.max(r.left + r.width / 2 - left - 6, 12), w - 24) + 'px';
+    }
+
+    function hideHint() {
+      hintCard.hidden = true;
+      window.removeEventListener('scroll', positionHint, true);
+      window.removeEventListener('resize', positionHint);
+    }
+
+    function showHint() {
+      if (shown || dataDetails.open) return;
+      shown = true;
+      hintCard.hidden = false;
+      positionHint();
+      window.addEventListener('scroll', positionHint, true);
+      window.addEventListener('resize', positionHint);
+    }
+
+    hintCard.addEventListener('click', function () {
+      dataDetails.open = true;
+      hideHint();
+    });
+    hintCard.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hintCard.click(); }
+    });
+    document.addEventListener('click', function (e) {
+      if (!hintCard.hidden && !hintCard.contains(e.target)) hideHint();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !hintCard.hidden) hideHint();
+    });
+    dataDetails.addEventListener('toggle', function () { if (dataDetails.open) hideHint(); });
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { showHint(); observer.disconnect(); }
+      });
+    }, { threshold: 0.3 });
+    observer.observe(document.querySelector('.section-b'));
+  })();
 })();
 </script>
 </body>
