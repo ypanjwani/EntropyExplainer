@@ -48,6 +48,60 @@
   .lede { margin: 0; color: var(--text-2); font-size: 15px; line-height: 1.6; max-width: 60ch; }
   .lede b { color: var(--text-1); }
 
+  /* "What is entropy?" intro card */
+  .sub-h { font-family: 'Libre Franklin', 'Segoe UI', sans-serif; font-weight: 700; font-size: 15px; margin: 0; color: var(--text-1); }
+  .ex-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .ex-card { display: flex; flex-direction: column; gap: 9px; background: var(--inset); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .ex-title { font-size: 13.5px; font-weight: 600; color: var(--text-1); }
+  .ex-dots { display: grid; grid-template-columns: repeat(10, 1fr); text-align: center; font-size: 13px; line-height: 1.35; }
+  .ex-dots .ca { color: var(--series-a); }
+  .ex-dots .cb { color: var(--series-b); }
+  .ex-stat { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .ex-stat b { color: var(--text-1); }
+  .ex-bar { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .ex-bar i { display: block; height: 100%; background: var(--series-a); border-radius: 4px; }
+  .ex-note { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
+  .ex-note b { color: var(--text-1); }
+  .callout { background: var(--series-a-soft); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.6; color: var(--text-1); }
+  .steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .steps li { display: grid; grid-template-columns: 24px 1fr; gap: 10px; font-size: 14px; line-height: 1.6; color: var(--text-2); }
+  .steps li b { color: var(--text-1); }
+  .steps .n { width: 22px; height: 22px; border-radius: 50%; background: var(--series-a); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+
+  .surprise-svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .surprise-dot { fill: var(--series-a); stroke: var(--surface-1); stroke-width: 2; }
+  .surprise-guide { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 3; }
+  .surprise-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--text-2); }
+  .surprise-note { font-family: 'IBM Plex Sans', sans-serif; font-style: italic; font-size: 11px; fill: var(--muted); }
+
+  /* "Try it: split a plain sequence" mini demo */
+  .seq-demo { display: flex; flex-direction: column; gap: 4px; }
+  .seq-row, .seq-bars { display: flex; align-items: center; }
+  .seq-item { flex: 1 1 0; display: flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1; }
+  .seq-item .ca { color: var(--series-a); }
+  .seq-item .cb { color: var(--series-b); }
+  .seq-gap {
+    flex: 0 0 16px; align-self: stretch; position: relative;
+    border: none; background: transparent; cursor: pointer; padding: 0; margin: 0 -1px;
+  }
+  .seq-gap::before {
+    content: ''; position: absolute; left: 50%; top: 2px; bottom: 2px; width: 2px;
+    background: var(--border); transform: translateX(-50%); border-radius: 1px;
+  }
+  .seq-gap:hover::before, .seq-gap:focus-visible::before { background: var(--muted); }
+  .seq-gap.active::before { background: var(--text-1); width: 3px; }
+  .seq-gap:focus-visible { outline: 2px solid var(--series-a); outline-offset: 2px; }
+  .seq-bars { height: 44px; align-items: flex-end; }
+  .seq-barbtn { flex: 0 0 16px; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+  .seq-barbtn::before { content: none; } /* no divider line in the bars row, just the fill bar below */
+  .seq-barbtn i { display: block; width: 9px; border-radius: 2px 2px 0 0; background: var(--grid); }
+  .seq-barbtn:hover i, .seq-barbtn:focus-visible i { background: var(--muted); }
+  .seq-barbtn.active i { background: var(--series-a); }
+  .seq-readout { margin: 2px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
+  .seq-readout b { color: var(--text-1); }
+  .seq-readout .ca { color: var(--series-a); }
+  .seq-readout .cb { color: var(--series-b); }
+
   .card {
     background: var(--surface-1);
     border: 1px solid var(--border);
@@ -450,8 +504,59 @@
   <header class="hero">
     <p class="eyebrow">Interactive · Information Theory</p>
     <h1>Entropy Lab</h1>
-    <p class="lede">In 1948 Claude Shannon defined a number for how <b>impure</b> a set of outcomes is — the fewer bits you'd need, on average, to describe an outcome drawn from it. Decision trees use this number, <b>entropy</b>, to decide which question to ask first. Drag the slider below to build a feel for its shape.</p>
+    <p class="lede">In 1948 Claude Shannon defined a number for how <b>impure</b> a set of outcomes is — the fewer bits you'd need, on average, to describe an outcome drawn from it. Decision trees use this number, <b>entropy</b>, to decide which question to ask first. Start with the plain-English version below, then drag the slider to build a feel for its shape.</p>
   </header>
+
+  <section class="card section-what" aria-labelledby="sectionWhat-title">
+    <p class="eyebrow">Start here</p>
+    <h2 id="sectionWhat-title">What is entropy?</h2>
+    <p class="section-intro"><b>Entropy is a number that tells you how mixed-up a group is.</b> Take a group of items, each either Class A (●) or Class B (★). Pick one at random and try to guess its class. If the group is all one class, you are never wrong. If it is an even mix, you are guessing blind. Entropy measures how surprised you would be, <i>on average</i>, by what comes out.</p>
+
+    <div class="ex-grid" id="entropyExamples"></div>
+
+    <div class="callout"><b>In one line:</b> the harder it is to guess the class of a random pick, the higher the entropy. A pure group scores 0; the most mixed a two-class group can get scores 1. The unit is the <b>bit</b>: roughly the number of yes/no questions you would need to pin the class down.</div>
+
+    <h3 class="sub-h">Where does the −log₂(p) come from?</h3>
+    <p class="section-intro">Entropy is really an <i>average</i>. Before you can average anything, each individual outcome needs its own score for how surprising it is. Call the probability of an outcome <i>p</i> and define its <b>surprise</b> — its "information content" — as <b>−log₂(p)</b>. The chart plots that function; the marked points show the property that makes log the only sane choice, not just a convenient one.</p>
+
+    <div class="two-col">
+      <svg class="surprise-svg" id="surpriseSvg" viewBox="0 0 340 200" role="img" aria-label="Chart of surprise, negative log base 2 of p, against probability p, marked at p equals 1, one half, one quarter, one eighth and one sixteenth">
+        <g id="surpriseGrid"></g>
+        <path id="surprisePath" class="curve-path"></path>
+        <g id="surprisePoints"></g>
+        <g id="surpriseAxis"></g>
+      </svg>
+      <ul class="steps">
+        <li><span class="n">1</span><span><b>Certainty isn't surprising.</b> −log₂(1) = 0. If p = 1 you already knew the outcome, so something guaranteed gives you zero bits of new information.</span></li>
+        <li><span class="n">2</span><span><b>Independent surprises should add, not multiply.</b> Two fair coin flips together land on any one pair with p = ½·½ = ¼, and that should feel like two separate 1-bit surprises stacked: 1 + 1 = 2 bits. Only a logarithm turns a <i>product</i> of probabilities into a <i>sum</i> of surprise — −log(p₁·p₂) = −log(p₁) − log(p₂). A plain 1/p or (1 − p) can't do that.</span></li>
+        <li><span class="n">3</span><span><b>Halving p always costs exactly 1 more bit.</b> That's what the dots on the chart show: p = 1, ½, ¼, ⅛, 1/16 land at 0, 1, 2, 3, 4 bits — an evenly spaced ruler, which is what makes "bits" a usable, additive unit at all. Base 2 is just the choice of ruler: log base <i>e</i> gives the identical curve measured in "nats" instead.</span></li>
+      </ul>
+    </div>
+
+    <div class="callout"><b>Entropy is the average surprise.</b> Weight each class's surprise by how often it actually occurs and add them up: H = Σ p·(−log₂p). For two classes that expands to exactly −p·log₂p − (1 − p)·log₂(1 − p) — the same h(p) formula this whole lab uses.</div>
+
+    <h3 class="sub-h">Why do decision trees care?</h3>
+    <p class="section-intro">A decision tree is a chain of if-then-else questions. It wants each question to leave the groups <b>less mixed</b> than before — so it needs to score how mixed a group is, and that is exactly what entropy does.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><span><b>Measure the mix now.</b> Look only at the target column (the thing you want to predict) and compute the entropy of the whole dataset. Call it the entropy <i>before</i>.</span></li>
+      <li><span class="n">2</span><span><b>Try a question.</b> Split the data on one feature, such as Outlook or “Income ≤ 47.5”, into smaller groups. Compute each group's entropy, then combine them with a <b>weighted average</b> (bigger groups count more). Call it the entropy <i>after</i>.</span></li>
+      <li><span class="n">3</span><span><b>Compare.</b> The drop, <i>before − after</i>, is the <b>Information Gain</b>. Ask the question with the biggest drop, then repeat inside each group until every group is pure.</span></li>
+    </ol>
+    <p class="section-intro">Entropy on its own only says how mixed a group is <i>right now</i>. It is the before-and-after change that tells you whether a question actually helped. The three sections below let you play with each step.</p>
+
+    <h3 class="sub-h">Try it: split a plain sequence</h3>
+    <p class="section-intro">Here is that recipe with no dataset or features at all — just a target column, ● Class A / ★ Class B, already laid out in some order (say, sorted by whichever feature the tree is about to ask about). <b>Click any gap</b> to test splitting there. The bars show the Information Gain every gap would give; the tallest one is the split an ID3-style tree would actually pick.</p>
+
+    <div class="seq-demo" id="seqDemo">
+      <div class="seq-row" id="seqRow"></div>
+      <div class="seq-bars" id="seqBars"></div>
+      <p class="seq-readout" id="seqReadout"></p>
+    </div>
+
+    <div class="callout" id="seqNote"><b>One nuance:</b> a real split never cuts the target column directly — it cuts on a <i>feature's</i> value (a category, or a numeric threshold like Income ≤ 47.5), and that's what puts same-feature rows next to each other in the first place. But once the rows are in that order, scanning every gap for the biggest Information Gain, exactly like above, is <i>literally</i> the algorithm — it's what <code>bestSplit</code> and <code>computeSplit</code> do in the sections below, just on a real x/y or Income/Credit axis instead of a row of dots.</div>
+  </section>
+
+  <div class="flow-connector" role="presentation">now play with the shape of it</div>
 
   <section class="card section-a" aria-labelledby="sectionA-title">
     <h2 id="sectionA-title">1. How impure is a set?</h2>
@@ -615,6 +720,196 @@
     if (p <= 0 || p >= 1) return 0;
     return -(p * Math.log2(p) + (1 - p) * Math.log2(1 - p));
   }
+
+  // ---------- Intro: what is entropy? Three worked mixes, computed with the same h(p) ----------
+  (function buildEntropyExamples() {
+    var N = 50;
+    var examples = [
+      { title: 'All one class', a: 50, note: 'Every pick is ● Class A. You never have to guess, so nothing ever surprises you. Entropy is <b>0</b>.' },
+      { title: 'Almost all one class', a: 49, note: 'You would nearly always guess ● and be right. A ★ is a surprise, but it is so rare that the <i>average</i> surprise is tiny.' },
+      { title: 'Half and half', a: 25, note: 'Every pick is a coin flip, so you are as surprised as you can be. This is the most mixed a two-class group can get: <b>1 bit</b>.' }
+    ];
+    var rand = mulberry32(5);
+    document.getElementById('entropyExamples').innerHTML = examples.map(function (ex) {
+      var items = [];
+      for (var i = 0; i < N; i++) items.push(i < ex.a ? 'a' : 'b');
+      for (var j = N - 1; j > 0; j--) { var k = Math.floor(rand() * (j + 1)); var tmp = items[j]; items[j] = items[k]; items[k] = tmp; }
+      var glyphs = items.map(function (t) { return t === 'a' ? '<span class="ca">●</span>' : '<span class="cb">★</span>'; }).join('');
+      var hv = h(ex.a / N);
+      return '<div class="ex-card"><div class="ex-title">' + ex.title + '</div>' +
+        '<div class="ex-dots" aria-hidden="true">' + glyphs + '</div>' +
+        '<div class="ex-stat">● ' + ex.a + ' · ★ ' + (N - ex.a) + ' → H = <b>' + hv.toFixed(3) + '</b> bits</div>' +
+        '<div class="ex-bar" role="img" aria-label="Entropy ' + hv.toFixed(3) + ' out of a maximum of 1 bit"><i style="width:' + (hv * 100).toFixed(1) + '%"></i></div>' +
+        '<p class="ex-note">' + ex.note + '</p></div>';
+    }).join('');
+  })();
+
+  // ---------- Intro: why -log2(p)? Static chart, marked at each halving of p ----------
+  (function buildSurpriseCurve() {
+    var PLOT = { left: 46, right: 322, top: 12, bottom: 168 };
+    var plotW = PLOT.right - PLOT.left, plotH = PLOT.bottom - PLOT.top;
+    var Y_MAX = 5.5; // bits shown; curve is clipped/faded above this rather than running to infinity at p -> 0
+    var xOf = function (p) { return PLOT.left + p * plotW; };
+    var yOf = function (bits) { return PLOT.bottom - (bits / Y_MAX) * plotH; };
+    var surprise = function (p) { return -Math.log2(p); };
+
+    var pts = [];
+    for (var i = 100; i >= 2; i--) { // p from 1.00 down to 0.02; stop short of the p=0 asymptote
+      var p = i / 100;
+      pts.push(xOf(p) + ',' + yOf(Math.min(surprise(p), Y_MAX)));
+    }
+    document.getElementById('surprisePath').setAttribute('d', 'M' + pts.join(' L'));
+
+    var gridG = document.getElementById('surpriseGrid');
+    var axisG = document.getElementById('surpriseAxis');
+    [0, 1, 2, 3, 4, 5].forEach(function (t) {
+      var hl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      hl.setAttribute('x1', PLOT.left); hl.setAttribute('x2', PLOT.right);
+      hl.setAttribute('y1', yOf(t)); hl.setAttribute('y2', yOf(t));
+      hl.setAttribute('class', t === 0 ? 'baseline' : 'grid-line');
+      gridG.appendChild(hl);
+
+      var ylab = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      ylab.setAttribute('x', PLOT.left - 8); ylab.setAttribute('y', yOf(t) + 3);
+      ylab.setAttribute('text-anchor', 'end'); ylab.setAttribute('class', 'axis-label');
+      ylab.textContent = t.toString();
+      axisG.appendChild(ylab);
+    });
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (t) {
+      var vl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      vl.setAttribute('x1', xOf(t)); vl.setAttribute('x2', xOf(t));
+      vl.setAttribute('y1', PLOT.top); vl.setAttribute('y2', PLOT.bottom);
+      vl.setAttribute('class', 'grid-line');
+      gridG.appendChild(vl);
+
+      var xlab = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      xlab.setAttribute('x', xOf(t)); xlab.setAttribute('y', PLOT.bottom + 16);
+      xlab.setAttribute('text-anchor', 'middle'); xlab.setAttribute('class', 'axis-label');
+      xlab.textContent = t.toString();
+      axisG.appendChild(xlab);
+    });
+
+    var xAxisTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    xAxisTitle.setAttribute('x', (PLOT.left + PLOT.right) / 2); xAxisTitle.setAttribute('y', PLOT.bottom + 32);
+    xAxisTitle.setAttribute('text-anchor', 'middle'); xAxisTitle.setAttribute('class', 'axis-label');
+    xAxisTitle.textContent = 'p';
+    axisG.appendChild(xAxisTitle);
+
+    var yAxisTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    yAxisTitle.setAttribute('x', -((PLOT.top + PLOT.bottom) / 2)); yAxisTitle.setAttribute('y', 12);
+    yAxisTitle.setAttribute('text-anchor', 'middle'); yAxisTitle.setAttribute('class', 'axis-label');
+    yAxisTitle.setAttribute('transform', 'rotate(-90)');
+    yAxisTitle.textContent = 'surprise, −log₂(p), in bits';
+    axisG.appendChild(yAxisTitle);
+
+    var asymNote = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    asymNote.setAttribute('x', xOf(0.02) + 4); asymNote.setAttribute('y', PLOT.top + 10);
+    asymNote.setAttribute('class', 'surprise-note');
+    asymNote.textContent = '→ ∞ as p → 0';
+    axisG.appendChild(asymNote);
+
+    // Marked points: each halving of p costs exactly 1 more bit of surprise.
+    var pointsG = document.getElementById('surprisePoints');
+    var marks = [
+      { p: 1, label: 'p=1 → 0 bits' },
+      { p: 0.5, label: 'p=½ → 1 bit' },
+      { p: 0.25, label: 'p=¼ → 2 bits' },
+      { p: 0.125, label: 'p=⅛ → 3 bits' },
+      { p: 0.0625, label: 'p=1/16 → 4 bits' }
+    ];
+    marks.forEach(function (m, idx) {
+      var bits = surprise(m.p);
+      var cx = xOf(m.p), cy = yOf(bits);
+
+      var gl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      gl.setAttribute('x1', cx); gl.setAttribute('x2', cx);
+      gl.setAttribute('y1', cy); gl.setAttribute('y2', PLOT.bottom);
+      gl.setAttribute('class', 'surprise-guide');
+      pointsG.appendChild(gl);
+
+      var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', 4);
+      dot.setAttribute('class', 'surprise-dot');
+      pointsG.appendChild(dot);
+
+      // The curve only descends to the right of each point (higher p = fewer bits), so a label
+      // placed up-and-right of a dot never crosses the line — except at p=1, the chart's bottom-right
+      // corner, where "up-right" would run off the edge; that one label goes up-left instead.
+      var isP1 = idx === 0;
+      var lab = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      lab.setAttribute('x', cx + (isP1 ? -7 : 7));
+      lab.setAttribute('y', cy - 7);
+      lab.setAttribute('text-anchor', isP1 ? 'end' : 'start');
+      lab.setAttribute('class', 'surprise-label');
+      lab.textContent = m.label;
+      pointsG.appendChild(lab);
+    });
+  })();
+
+  // ---------- Intro: "try it" sequence-splitting demo. Fixed target sequence, no features —
+  // just every possible split point scored by Information Gain, computed with the same h(p). ----------
+  (function buildSeqDemo() {
+    var seq = ['A', 'A', 'B', 'B', 'A', 'B', 'A', 'B', 'A', 'A'];
+    var N = seq.length;
+    var glyph = function (cls) { return cls === 'A' ? '<span class="ca">●</span>' : '<span class="cb">★</span>'; };
+    var fracA = function (arr) { return arr.filter(function (x) { return x === 'A'; }).length / arr.length; };
+    var groupH = function (arr) { return arr.length ? h(fracA(arr)) : 0; };
+    var E = h(fracA(seq));
+
+    // Score every one of the N-1 possible split points once, up front.
+    var splits = [];
+    for (var g = 1; g < N; g++) {
+      var left = seq.slice(0, g), right = seq.slice(g);
+      var lh = groupH(left), rh = groupH(right);
+      var wh = (left.length / N) * lh + (right.length / N) * rh;
+      splits.push({ g: g, left: left, right: right, lh: lh, rh: rh, wh: wh, gain: E - wh });
+    }
+    var maxGain = Math.max.apply(null, splits.map(function (s) { return s.gain; }));
+    var bestG = splits.filter(function (s) { return s.gain >= maxGain - 1e-9; })[0].g;
+
+    var rowEl = document.getElementById('seqRow');
+    var barsEl = document.getElementById('seqBars');
+    var readoutEl = document.getElementById('seqReadout');
+
+    var rowHtml = '', barsHtml = '';
+    seq.forEach(function (cls, i) {
+      rowHtml += '<span class="seq-item">' + glyph(cls) + '</span>';
+      barsHtml += '<span class="seq-item"></span>';
+      if (i < N - 1) {
+        var g = i + 1;
+        var s = splits[i];
+        var barPct = maxGain > 0 ? Math.max((s.gain / maxGain) * 100, 4) : 4;
+        rowHtml += '<button type="button" class="seq-gap" data-gap="' + g + '" aria-label="Split after position ' + g + '"></button>';
+        barsHtml += '<button type="button" class="seq-gap seq-barbtn" data-gap="' + g + '" aria-label="Information gain ' + s.gain.toFixed(3) + ' bits, split after position ' + g + '"><i style="height:' + barPct.toFixed(1) + '%"></i></button>';
+      }
+    });
+    rowEl.innerHTML = rowHtml;
+    barsEl.innerHTML = barsHtml;
+
+    var gapButtons = document.querySelectorAll('#seqDemo .seq-gap');
+
+    function render(g) {
+      var s = splits[g - 1];
+      gapButtons.forEach(function (btn) {
+        btn.classList.toggle('active', parseInt(btn.getAttribute('data-gap'), 10) === g);
+      });
+      var leftGlyphs = s.left.map(glyph).join('');
+      var rightGlyphs = s.right.map(glyph).join('');
+      readoutEl.innerHTML =
+        'E (before) = <b>' + E.toFixed(3) + '</b> bits<br>' +
+        'Left, n=' + s.left.length + ': ' + leftGlyphs + ' → H = <b>' + s.lh.toFixed(3) + '</b> &nbsp;·&nbsp; ' +
+        'Right, n=' + s.right.length + ': ' + rightGlyphs + ' → H = <b>' + s.rh.toFixed(3) + '</b><br>' +
+        'Weighted H (after) = (' + s.left.length + '/' + N + ')·' + s.lh.toFixed(3) + ' + (' + s.right.length + '/' + N + ')·' + s.rh.toFixed(3) + ' = <b>' + s.wh.toFixed(3) + '</b><br>' +
+        'Information Gain = ' + E.toFixed(3) + ' − ' + s.wh.toFixed(3) + ' = <b>' + s.gain.toFixed(3) + '</b> bits' +
+        (g === bestG ? ' — the tallest bar: this is the split an ID3-style tree would pick.' : ' — try the tallest bar above for the actual best split.');
+    }
+
+    gapButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () { render(parseInt(btn.getAttribute('data-gap'), 10)); });
+    });
+
+    render(bestG);
+  })();
 
   // ---------- Section 1: slider ----------
   var slider = document.getElementById('pSlider');

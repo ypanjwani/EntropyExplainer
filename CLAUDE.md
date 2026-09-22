@@ -4,19 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-"Entropy Lab": an interactive explainer for entropy, Information Gain and decision-tree splitting. The whole app is one self-contained file, `entropy-lab.html` (inline CSS + one inline `<script>` IIFE, vanilla JS, no framework, no build step, no dependencies). `prompt.md` is empty. Do not turn this into a Claude Artifact or split it into a bundler project; the user explicitly wants a plain local HTML/JS page.
+"Entropy Lab": an interactive explainer for entropy, Information Gain and decision-tree splitting. The whole app is one self-contained file, `index.html` (named so GitHub Pages serves it at the site root) (inline CSS + one inline `<script>` IIFE, vanilla JS, no framework, no build step, no dependencies). `prompt.md` is empty. Do not turn this into a Claude Artifact or split it into a bundler project; the user explicitly wants a plain local HTML/JS page.
 
-The repo has no package manager, tests, or linter. The enclosing git root is the user's home directory (`C:/Users/dell`), so `git status` here is noisy; only `entropy-lab.html` and this file matter.
+The repo has no package manager, tests, or linter. This folder is its own git repo (`origin` = github.com/ypanjwani/EntropyExplainer, branch `main`), published with GitHub Pages at https://ypanjwani.github.io/EntropyExplainer/. It sits inside the user's home directory, which is a separate, remote-less git repo: always run git from this folder and never push from the home directory. Only `index.html` and this file matter.
 
 ## Running
 
-- Open `entropy-lab.html` directly in a browser (`Start-Process` on Windows), or serve the folder: `python -m http.server 8000` from this directory, then http://localhost:8000/entropy-lab.html.
+- Open `index.html` directly in a browser (`Start-Process` on Windows), or serve the folder: `python -m http.server 8000` from this directory, then http://localhost:8000/index.html.
 - Only external request is the Google Fonts `<link>`; the page works offline with fallback fonts.
 - There is nothing to run for verification except loading the page and exercising the interactions. Pure logic (e.g. `bestSplit`, entropy math) can be sanity-checked by extracting functions from the file into a `node -e` script.
 
 ## Architecture
 
-The page is three numbered sections (`.card`s) joined by `.flow-connector` dividers, and one script that wires them up. Order inside the script matters because later sections reuse earlier helpers via shared closure scope:
+The page is an unnumbered "What is entropy?" intro card (`.section-what`; plain-language explanation plus three example mixes drawn by `buildEntropyExamples()` using `h(p)`) followed by three numbered sections (`.card`s), all joined by `.flow-connector` dividers, and one script that wires them up. Order inside the script matters because later sections reuse earlier helpers via shared closure scope:
 
 1. **Section 1, "How impure is a set?"** (`// Section 1` in the script)
    - `h(p)` is the binary entropy function used by everything else.
